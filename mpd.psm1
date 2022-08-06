@@ -1,12 +1,39 @@
 using namespace System.Collections.Generic
 
 $script:MPD = [Mpd]::new()
+$script:fmt = "%artist%`u{1}%title%`u{1}%album%`u{1}%file%"
 
 class Track {
-	[string] $title
-	[string] $artist
-	[string] $album
-	[string] $file
+	[string] $Title
+	[string] $Artist
+	[string] $Album
+	[string] $File
+
+	static [Track] Parse([string]$s) {
+		$c = [char]1
+		$_artist, $_title, $_album, $_file = $s.split($c) | foreach-object { $_.trim() }
+		if($null -eq $_file) {
+			return $null
+		}
+		$track = [Track] @{
+			Title = $_title
+			Artist = $_artist
+			Album = $_Album
+			File = $_file
+		}
+		return $track
+	}
+
+	[string] ToString() {
+		$art = $this.artist ?? "?"
+		$alb = $this.album ?? "?"
+		$tit = $this.title ?? $this.file
+		return "$tit [$alb] by $art"
+	}
+
+	[void] Play() {
+		script:Play-Track $this
+	}
 }
 
 class Mpd {
@@ -15,23 +42,21 @@ class Mpd {
 	$artists = [SortedDictionary[string, [List[Track]]]]::new([StringComparer]::InvariantCultureIgnoreCase)
 
 	[void] reload() {
-		$fmt = "%artist%::%title%::%album%::%file%"
 		$this.artists.clear()
 
-		foreach($val in mpc.exe -q -f $fmt listall) {
-			$val = $val.trim()
-			$artist, $title, $album, $file = $val.split("::") | foreach-object { $_.trim() }
-			if($null -eq $file) {
+		foreach($val in script::mpc -f $script:fmt listall) {
+			$song = [Track]::parse($val)
+			if(!$song) {
 				continue
 			}
-			$song = [Track] @{ title = $title; artist = $artist; file = $file; album = $album }
+
 			$artistTracks = [List[Track]]::new()
-			if($this.artists.TryGetValue($artist, [ref] $artistTracks)) {
+			if($this.artists.TryGetValue($song.artist, [ref] $artistTracks)) {
 				[void] $artistTracks.Add($song)
 			} else {
-				$artistTracks = $artistTracks = [List[Track]]::new(32)
+				$artistTracks = [List[Track]]::new(32)
 				[void] $artistTracks.Add($song)
-				[void] $this.artists.Add($artist, $artistTracks)
+				[void] $this.artists.Add($song.artist, $artistTracks)
 			}
 		}
 	}
@@ -44,23 +69,45 @@ function :mpc {
 		[parameter(position = 0, valueFromRemainingArguments)]
 		[object[]] $Command
 	)
-	mpc.exe -q $args
+	mpc.exe -q $command
 	if($LastExitCode -ne 0) {
 		write-error "mpc process exited with $lastExitCode"
 	}
 }
 
 function Get-Track {
-	[CmdletBinding()]
+	[CmdletBinding(DefaultParameterSetName = "query")]
 	[OutputType([Track])]
 	param (
-		[parameter(position = 0)]
+		[parameter(
+			ParameterSetName = "query",
+			position = 0,
+			HelpMessage = "Title of the track"
+		)]
 		[string] $Title,
-		[parameter()]
+		[parameter(
+			ParameterSetName = "query",
+			HelpMessage = "Name of the artist"
+		)]
 		[string] $Artist,
-		[parameter()]
-		$Album
+		[parameter(
+			ParameterSetName = "query",
+			HelpMessage = "Name of the album"
+		)]
+		$Album,
+
+		[Parameter(Mandatory, ParameterSetName = "current", HelpMessage = "Get the currently playing song or playlist")]
+		[ValidateSet("Track", "Playlist")]
+		[string]$Current
 	)
+
+	if($current -eq "Track") {
+		script::mpc -f $script:fmt current | foreach-object { [Track]::parse($_) }
+		return
+	} elseif($current -eq "Playlist") {
+		script::mpc -f $fmt playlist | foreach-object { [Track]::Parse($_) }
+		return
+	}
 
 	foreach($x in $script:MPD.artists.getEnumerator()) {
 		if(!$artist -or $x.key -like $artist) {
@@ -72,5 +119,64 @@ function Get-Track {
 	}
 }
 
-function get-mpd { return $script:mpd }
-function reload-mpd { $script:MPD.reload() }
+function sync-mpd {
+	$script:MPD.reload()
+}
+
+function Play-Track {
+	[CmdletBinding(DefaultParameterSetName = "object")]
+	param (
+		[parameter(
+			ParameterSetName = "object",
+			HelpMessage = "Track to play",
+			Position = 0,
+			ValueFromPipeline,
+			Mandatory
+		)]
+		[Track[]] $Track,
+
+		[Parameter(
+			ParameterSetName = "query",
+			HelpMessage = "The title of the track",
+			Position = 0
+		)]
+		[string] $Title,
+		[Parameter(
+			ParameterSetName = "query",
+			HelpMessage = "The name of the artist"
+		)]
+		[string] $Artist,
+		[Parameter(
+			ParameterSetName = "query",
+			HelpMessage = "The name of the album"
+		)]
+		[string] $Album
+	)
+
+	begin {
+		$tracks = [List[Track]]::new()
+		if($PSCmdlet.ParameterSetName -ceq "query") {
+			$tracks = Get-Track -artist:$artist -album:$album -title:$title
+		}
+	}
+	process {
+		if($track) {
+			[void] $tracks.AddRange($track)
+		}
+	}
+	end {
+		if($tracks) {
+			script::mpc clear
+			$tracks.file | mpc.exe -q add
+			script::mpc play
+
+			if($tracks.count -eq 1) {
+				write-information "Playing $($tracks[0])"
+			} else {
+				write-information "Playing $($tracks.count) tracks"
+			}
+		} else {
+			write-warning "No tracks found"
+		}
+	}
+}
