@@ -3,6 +3,11 @@ using namespace System.Collections.Generic
 $script:MPD = [Mpd]::new()
 $script:fmt = "%artist%`u{1}%title%`u{1}%album%`u{1}%file%"
 
+$ExecutionContext.SessionState.Module.OnRemove += {
+	$script:MPD.arttists.clear()
+	$script:MPD = $null
+}
+
 class Track {
 	[string] $Title
 	[string] $Artist
@@ -33,6 +38,10 @@ class Track {
 
 	[void] Play() {
 		script:Play-Track $this
+	}
+
+	[void] Queue() {
+		script:Play-Track -queue $this
 	}
 }
 
@@ -119,7 +128,7 @@ function Get-Track {
 	}
 }
 
-function sync-mpd {
+function Sync-Mpd {
 	$script:MPD.reload()
 }
 
@@ -150,7 +159,11 @@ function Play-Track {
 			ParameterSetName = "query",
 			HelpMessage = "The name of the album"
 		)]
-		[string] $Album
+		[string] $Album,
+
+		[Parameter(ParameterSetName = "object", HelpMessage = "Append instead of replacing")]
+		[Parameter(ParameterSetName = "query", HelpMessage = "Append instead of replacing")]
+		[switch] $Queue
 	)
 
 	begin {
@@ -166,11 +179,19 @@ function Play-Track {
 	}
 	end {
 		if($tracks) {
-			script::mpc clear
+			if(!$queue) {
+				script::mpc clear
+			}
 			$tracks.file | mpc.exe -q add
-			script::mpc play
+			if(!$queue) {
+				script::mpc play
+			}
 
-			if($tracks.count -eq 1) {
+			if($queue -and $tracks.count -eq 1) {
+				write-information "Added $($tracks[0]) to the queue"
+			} elseif($queue) {
+				write-information "Added $($tracks.count) tracks to the queue"
+			} elseif($tracks.count -eq 1) {
 				write-information "Playing $($tracks[0])"
 			} else {
 				write-information "Playing $($tracks.count) tracks"

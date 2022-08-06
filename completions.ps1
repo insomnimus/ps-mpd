@@ -20,6 +20,11 @@ filter :quote {
 		}
 
 		$params[$paramName] = $buf
+		$params = @{
+			Artist = $params["Artist"]
+			Album = $params["Album"]
+			Title = $params["Title"]
+		}
 
 		Get-Track @params `
 		| select-object -ExpandProperty $paramName `

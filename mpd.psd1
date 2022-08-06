@@ -5,7 +5,7 @@
 	Author = "Taylan Gökkaya <insomnimus.dev@gmail.com>"
 	Copyright = "Copyright (c) 2022 Taylan Gökkaya <insomnimus.dev@gmail.com>"
 	Description = "MPD commands for Powershell"
-	PowerShellVersion = "5.0"
+	PowerShellVersion = "6.0"
 
 	FunctionsToExport = "*"
 	CmdletsToExport = @()
