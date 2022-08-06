@@ -10,15 +10,13 @@ class Track {
 }
 
 class Mpd {
-	[List[Track]]
-	$tracks = [List[Track]]::new(1024)
+	# [List[Track]] $tracks = [List[Track]]::new(1024)
 	[SortedDictionary[string, [List[Track]]]]
 	$artists = [SortedDictionary[string, [List[Track]]]]::new([StringComparer]::InvariantCultureIgnoreCase)
 
 	[void] reload() {
 		$fmt = "%artist%::%title%::%album%::%file%"
 		$this.artists.clear()
-		$this.tracks.clear()
 
 		foreach($val in mpc.exe -q -f $fmt listall) {
 			$val = $val.trim()
@@ -35,7 +33,6 @@ class Mpd {
 				[void] $artistTracks.Add($song)
 				[void] $this.artists.Add($artist, $artistTracks)
 			}
-			[void] $this.tracks.Add($song)
 		}
 	}
 }
@@ -65,13 +62,12 @@ function Get-Track {
 		$Album
 	)
 
-	foreach($x in $script:MPD.tracks) {
-		if(
-			(!$artist -or $x.artist -like $artist) -and
-			(!$album -or $x.album -like $album) -and
-			(!$title -or $x.title -like $title)
-		) {
-			$x
+	foreach($x in $script:MPD.artists.getEnumerator()) {
+		if(!$artist -or $x.key -like $artist) {
+			$x.value | where-object {
+				(!$album -or $_.album -like $album) -and
+				(!$title -or $_.title -like $title)
+			}
 		}
 	}
 }
