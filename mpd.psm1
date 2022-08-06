@@ -30,9 +30,9 @@ class Track {
 	}
 
 	[string] ToString() {
-		$art = $this.artist ?? "?"
-		$alb = $this.album ?? "?"
-		$tit = $this.title ?? $this.file
+		$art = if($this.artist) { $this.artist } else { "?" }
+		$alb = if($this.album) { $this.album } else { "?" }
+		$tit = if($this.title) { $this.title } else { $this.file }
 		return "$tit [$alb] by $art"
 	}
 
