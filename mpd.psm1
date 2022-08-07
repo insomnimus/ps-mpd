@@ -141,10 +141,10 @@ function Get-Track {
 	}
 
 	foreach($x in $script:MPD.artists.getEnumerator()) {
-		if(!$artist -or $x.key -like $artist) {
+		if($null -eq $artist -or $x.key -like $artist) {
 			$x.value | where-object {
-				(!$album -or $_.album -like $album) -and
-				(!$title -or $_.title -like $title)
+				($null -eq $album -or $_.album -like $album) -and
+				($null -eq $title -or $_.title -like $title)
 			}
 		}
 	}
