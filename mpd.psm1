@@ -93,6 +93,18 @@ class Mpd {
 	}
 }
 
+class Album {
+	[string] $Name
+	[string] $Artist
+	[Track[]] $Tracks
+
+	[string] ToString() {
+		$_name = if($this.name) { $this.name } else { "?" }
+		$_artist = if($this.artist) { $this.artist } else { "?" }
+		return "$_name by $_artist"
+	}
+}
+
 function :mpc {
 	[cmdletBinding()]
 	[outputType([string[]])]
@@ -106,6 +118,10 @@ function :mpc {
 	}
 }
 
+function Sync-Mpd {
+	$script:MPD.reload()
+}
+
 function Get-Track {
 	[CmdletBinding(DefaultParameterSetName = "query")]
 	[OutputType([Track])]
@@ -115,7 +131,7 @@ function Get-Track {
 			position = 0,
 			HelpMessage = "Title of the track"
 		)]
-		[string] $Title,
+		[string[]] $Title,
 		[parameter(
 			ParameterSetName = "query",
 			HelpMessage = "Name of the artist"
@@ -125,7 +141,7 @@ function Get-Track {
 			ParameterSetName = "query",
 			HelpMessage = "Name of the album"
 		)]
-		$Album,
+		[string] $Album,
 
 		[Parameter(Mandatory, ParameterSetName = "current", HelpMessage = "Get the currently playing song or playlist")]
 		[ValidateSet("Track", "Playlist")]
@@ -141,37 +157,28 @@ function Get-Track {
 	}
 
 	foreach($x in $script:MPD.artists.getEnumerator()) {
-		if($null -eq $artist -or $x.key -like $artist) {
+		if(!$artist -or $x.key -like $artist) {
 			$x.value | where-object {
-				($null -eq $album -or $_.album -like $album) -and
-				($null -eq $title -or $_.title -like $title)
+				if($album -and $_.album -notlike $album) { return $false }
+				if(!$title) { return $true }
+				foreach($t in $title) {
+					if($_.title -like $t) { return $true }
+				}
+				$false
 			}
 		}
 	}
 }
 
-function Sync-Mpd {
-	$script:MPD.reload()
-}
-
 function Play-Track {
 	[CmdletBinding(DefaultParameterSetName = "object")]
 	param (
-		[parameter(
-			ParameterSetName = "object",
-			HelpMessage = "Track to play",
-			Position = 0,
-			ValueFromPipeline,
-			Mandatory
-		)]
-		[Track[]] $Track,
-
 		[Parameter(
 			ParameterSetName = "query",
 			HelpMessage = "The title of the track",
 			Position = 0
 		)]
-		[string] $Title,
+		[string[]] $Title,
 		[Parameter(
 			ParameterSetName = "query",
 			HelpMessage = "The name of the artist"
@@ -182,6 +189,15 @@ function Play-Track {
 			HelpMessage = "The name of the album"
 		)]
 		[string] $Album,
+
+		[parameter(
+			ParameterSetName = "object",
+			HelpMessage = "Track to play",
+			Position = 0,
+			ValueFromPipeline,
+			Mandatory
+		)]
+		[Track[]] $Track,
 
 		[Parameter(ParameterSetName = "object", HelpMessage = "Append instead of replacing")]
 		[Parameter(ParameterSetName = "query", HelpMessage = "Append instead of replacing")]
@@ -223,3 +239,112 @@ function Play-Track {
 		}
 	}
 }
+
+function Get-Album {
+	[CmdletBinding()]
+	[OutputType([Album])]
+	param (
+		[Parameter(
+			Position = 0,
+			HelpMessage = "Name of the album"
+		)]
+		[string[]] $Name,
+		[Parameter(HelpMessage = "Name of the artist")]
+		[string] $Artist
+	)
+
+	$res = if($name) {
+		foreach($n in $name) {
+			script:get-track -artist:$artist -album:$n
+		}
+	} else {
+		script:get-track -artist:$artist
+	}
+
+	$res `
+	| select-object -unique `
+	| group-object -property Album `
+	| foreach-object {
+		[Album] @{
+			Name = $_.Name
+			artist = $_.group[0].artist
+			tracks = ($_.group | sort-object -stable -property trackNo)
+		}
+	}
+}
+
+function Play-Album {
+	[CmdletBinding(DefaultParameterSetName = "query")]
+	param (
+		[Parameter(HelpMessage = "Name of the artist", ParameterSetName = "query")]
+		[string] $Artist,
+		[Parameter(Position = 0, HelpMessage = "Name of the album", ParameterSetName = "query")]
+		[string[]] $Name,
+
+		[Parameter(
+			ValueFromPipeLine,
+			Mandatory,
+			Position = 0,
+			HelpMessage = "The Album object",
+			ParameterSetName = "object"
+		)]
+		[Album[]] $InputObject,
+
+		[Parameter(ParameterSetName = "object", HelpMessage = "Add the album at the end of the queue")]
+		[Parameter(ParameterSetName = "query", HelpMessage = "Add the album at the end of the queue")]
+		[switch] $Queue
+	)
+
+	begin {
+		[List[Album]] $albums = @()
+		if($PSCmdlet.ParameterSetName -eq "query") {
+			$albums = script:Get-Album -name:$name -artist:$artist
+		}
+	}
+	process {
+		if($inputObject) {
+			[void] $albums.AddRange($inputObject)
+		}
+	}
+	end {
+		$ntracks = $albums.tracks | measure-object | select-object -expandProperty Count
+		if($ntracks -eq 0) {
+			write-warning "No tracks found"
+			return
+		} elseif($ntracks -eq 1) {
+			$ntracks = "1 track"
+		} else {
+			$ntracks = "$ntracks tracks"
+		}
+
+		switch($albums.count) {
+			1 {
+				$albums[0].tracks | script:play-track -queue:$queue -infa ignore
+				if($queue) {
+					write-information "Added $($albums[0]) to the queue ($ntracks)"
+				} else {
+					write-information "Playing $($albums[0]) ($ntracks)"
+				}
+				break
+			}
+			0 {
+				write-warning "No albums found"
+				return
+			}
+			default {
+				$albums.tracks | script:Play-Track -queue:$queue -infa ignore
+				$len = $albums.count
+				if($queue) {
+					write-information "Added $len albums to the queue ($ntracks)"
+				} else {
+					write-information "Playing $len albums ($ntracks)"
+				}
+			}
+		}
+	}
+}
+
+set-alias ptra play-track
+set-alias stra get-track
+set-alias salb Get-Album
+set-alias palb Play-Album
