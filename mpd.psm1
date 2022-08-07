@@ -1,10 +1,10 @@
 using namespace System.Collections.Generic
 
 $script:MPD = [Mpd]::new()
-$script:fmt = "%artist%`u{1}%title%`u{1}%album%`u{1}%file%"
+$script:fmt = "%artist%`u{1}%title%`u{1}%album%`u{1}%time%`u{1}%track%`u{1}%file%"
 
 $ExecutionContext.SessionState.Module.OnRemove += {
-	$script:MPD.arttists.clear()
+	$script:MPD.artists.clear()
 	$script:MPD = $null
 }
 
@@ -12,18 +12,39 @@ class Track {
 	[string] $Title
 	[string] $Artist
 	[string] $Album
+	[TimeSpan] $Duration
+	[int] $TrackNo
 	[string] $File
 
 	static [Track] Parse([string]$s) {
 		$c = [char]1
-		$_artist, $_title, $_album, $_file = $s.split($c) | foreach-object { $_.trim() }
+		$_artist, $_title, $_album, $_duration, $_trackno, $_file = $s.split($c) | foreach-object { $_.trim() }
 		if($null -eq $_file) {
 			return $null
 		}
+		$split = "$_duration".split(":")
+		$_duration = switch($split.count) {
+			1 { [TimeSpan]::new(0, 0, $split[0]); break }
+			2 { [TimeSpan]::new(0, $split[0], $split[1]); break }
+			3 { [TimeSpan]::new($split[0], $split[1], $split[2]); break }
+			4 {
+				$hours = ([int] $split[0]) * 24 + $split[1]
+				[TimeSpan]::new($hours, $split[2], $split[3])
+				break
+			}
+			default { [TimeSpan]::Zero }
+		}
+		$n = 0
+		if(-not [int]::TryParse($_trackno, [ref] $n)) {
+			$n = -1
+		}
+
 		$track = [Track] @{
 			Title = $_title
 			Artist = $_artist
 			Album = $_Album
+			Duration = $_duration
+			TrackNo = $n
 			File = $_file
 		}
 		return $track
