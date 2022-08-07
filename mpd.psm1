@@ -54,7 +54,8 @@ class Track {
 		$art = if($this.artist) { $this.artist } else { "?" }
 		$alb = if($this.album) { $this.album } else { "?" }
 		$tit = if($this.title) { $this.title } else { $this.file }
-		return "$tit [$alb] by $art"
+		$dur = if($this.duration.TotalHours -ge 1) { $this.duration.ToString() } else { "{0}:{1}" -f $this.duration.minutes, $this.duration.seconds }
+		return "$tit [$alb] by $art [$dur]"
 	}
 
 	[void] Play() {
