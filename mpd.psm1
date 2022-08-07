@@ -105,6 +105,23 @@ class Album {
 	}
 }
 
+class Artist {
+	[string] $Name
+	[Album[]] $Albums
+}
+
+function :plural {
+	param(
+		[int] $n,
+		[string] $s
+	)
+	if($n -eq 1) {
+		"1 $s"
+	} else {
+		"$n ${s}s"
+	}
+}
+
 function :mpc {
 	[cmdletBinding()]
 	[outputType([string[]])]
@@ -262,6 +279,7 @@ function Get-Album {
 	}
 
 	$res `
+		# TODO: make it select unique by file name
 	| select-object -unique `
 	| group-object -property Album `
 	| foreach-object {
@@ -344,7 +362,96 @@ function Play-Album {
 	}
 }
 
-set-alias ptra play-track
+function Get-Artist {
+	[CmdletBinding()]
+	[OutputType([Artist])]
+	param (
+		[Parameter(Position = 0, HelpMessage = "Name of the artist")]
+		[string[]] $Name
+	)
+	if(!$name) {
+		$name = [string[]] @("*")
+	}
+
+	foreach($n in $name) {
+		foreach($x in $script:MPD.artists.GetEnumerator()) {
+			if($x.key -like $n) {
+				$albums = $x.value | group-object -property Album | foreach-object {
+					[Album] @{
+						Name = $_.Name
+						Tracks = ($_.group | sort-object -stable -property TrackNo)
+						Artist = $x.Key
+					}
+				}
+
+				[Artist] @{ Name = $x.key; Albums = $albums }
+			}
+		}
+	}
+}
+
+function Play-Artist {
+	[CmdletBinding(DefaultParameterSetName = "query")]
+	param (
+		[Parameter(Mandatory, Position = 0, HelpMessage = "Name of the artist", ParameterSetName = "query")]
+		[string[]] $Name,
+
+		[Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = "object", HelpMessage = "The input Artist object")]
+		[Artist[]] $InputObject,
+
+		[Parameter(ParameterSetName = "object", HelpMessage = "Add the artists tracks at the end of the queue")]
+		[Parameter(ParameterSetName = "query", HelpMessage = "Add the artists tracks at the end of the queue")]
+		[switch] $Queue
+	)
+
+	begin {
+		[List[Artist]] $artists = @()
+		if($PSCmdlet.ParameterSetName -eq "query") {
+			$artists = script:Get-Artist -name:$name
+		}
+	}
+	process {
+		if($inputObject) {
+			[void] $artists.AddRange($inputObject)
+		}
+	}
+	end {
+		$nAlbs = $artists.albums.count
+		$ntracks = $artists.albums.tracks.count
+		if($ntracks -eq 0) {
+			write-warning "No tracks found"
+			return
+		}
+		$ntracks = script::plural $ntracks "track"
+		$nalbs = script::plural $nalbs "album"
+
+		switch($artists.count) {
+			0 { write-warning "No artist found"; return }
+			1 {
+				$artists[0].albums.tracks | script:play-track -queue:$queue -infa ignore
+				$name = if($artists[0].name) { $artists[0].name } else { "?" }
+				if($queue) {
+					write-information "Added $name ($nalbs, $ntracks) to the queue"
+				} else {
+					write-information "Playing $name ($nalbs, $ntracks)"
+				}
+				break
+			}
+			default {
+				$artists.albums.tracks | script:play-track -infa ignore -queue:$queue
+				if($queue) {
+					write-information "Added $_ artists ($nalbs, $ntracks) to the queue"
+				} else {
+					write-information "Playing $_ artists ($nalbs, $ntracks)"
+				}
+			}
+		}
+	}
+}
+
 set-alias stra get-track
+set-alias ptra play-track
 set-alias salb Get-Album
 set-alias palb Play-Album
+set-alias sart Get-Artist
+set-alias part Play-Artist

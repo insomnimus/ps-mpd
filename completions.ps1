@@ -60,3 +60,21 @@ filter :quote {
 		| script::quote
 	}
 }
+
+Register-ArgumentCompleter -CommandName Get-Artist, Play-Artist -ParameterName Name -ScriptBlock {
+	param($_a, $_b, $buf, $_d, $_params)
+
+	if($buf.startswith("'")) {
+		$buf = $buf.trim("'")
+	} elseif($buf.startswith('"')) {
+		$buf = $buf.trim('"')
+	}
+
+	if(!$buf.endswith("*")) {
+		$buf += "*"
+	}
+
+	$script:MPD.artists.Keys `
+	| where-object { $_ -like $buf } `
+	| script::quote
+}
