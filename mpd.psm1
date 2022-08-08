@@ -68,7 +68,6 @@ class Track {
 }
 
 class Mpd {
-	# [List[Track]] $tracks = [List[Track]]::new(1024)
 	[SortedDictionary[string, [List[Track]]]]
 	$artists = [SortedDictionary[string, [List[Track]]]]::new([StringComparer]::InvariantCultureIgnoreCase)
 
@@ -133,6 +132,14 @@ function :mpc {
 	if($LastExitCode -ne 0) {
 		write-error "mpc process exited with $lastExitCode"
 	}
+}
+
+function Play-Next {
+	mpc next
+}
+
+function Play-Previous {
+	mpc prev
 }
 
 function Sync-Mpd {
@@ -455,3 +462,6 @@ set-alias salb Get-Album
 set-alias palb Play-Album
 set-alias sart Get-Artist
 set-alias part Play-Artist
+
+set-alias "<" Play-Previous
+set-alias ">" Play-Next

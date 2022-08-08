@@ -75,6 +75,6 @@ Register-ArgumentCompleter -CommandName Get-Artist, Play-Artist -ParameterName N
 	}
 
 	$script:MPD.artists.Keys `
-	| where-object { $_ -like $buf } `
+	| where-object { $_ -and $_ -like $buf } `
 	| script::quote
 }
