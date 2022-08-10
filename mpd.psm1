@@ -5,6 +5,7 @@ $script:fmt = "%artist%`u{1}%title%`u{1}%album%`u{1}%time%`u{1}%track%`u{1}%file
 
 $ExecutionContext.SessionState.Module.OnRemove += {
 	$script:MPD.artists.clear()
+	$script:MPD.playlists.clear()
 	$script:MPD = $null
 }
 
@@ -67,17 +68,33 @@ class Track {
 	}
 }
 
+class Playlist {
+	[string] $Path
+	[string] $Name
+	[List[Track]] $Tracks
+}
+
 class Mpd {
+	[string] $playlistsDir
 	[SortedDictionary[string, [List[Track]]]]
 	$artists = [SortedDictionary[string, [List[Track]]]]::new([StringComparer]::InvariantCultureIgnoreCase)
+	[SortedDictionary[string, Playlist]]
+	$Playlists = [SortedDictionary[string, Playlist]]::new([StringComparer]::InvariantCultureIgnoreCase)
 
 	[void] reload() {
 		$this.artists.clear()
+		$this.playlists.clear()
+
+		$tracks = [Dictionary[string, Track]]::new()
+		$loadPlaylists = $this.playlistsDir -and (test-path -type container -lp $this.playlistsDir)
 
 		foreach($val in script::mpc -f $script:fmt listall) {
 			$song = [Track]::parse($val)
 			if(!$song) {
 				continue
+			}
+			if($loadPlaylists) {
+				$tracks[$song.file] = $song
 			}
 
 			$artistTracks = [List[Track]]::new()
@@ -88,6 +105,34 @@ class Mpd {
 				[void] $artistTracks.Add($song)
 				[void] $this.artists.Add($song.artist, $artistTracks)
 			}
+		}
+
+		# load playlists
+		if(!$this.playlistsDir) {
+			return
+		} elseif(!$loadPlaylists) {
+			write-warning "the playlists directory does not exist or is not a directory ($($this.playlistsDir))"
+			return
+		}
+
+		foreach($pl in get-childitem -lp $this.playlistsDir -file -filter "*.m3u") {
+			$plist = [Playlist] @{
+				Name = $pl.basename
+				Path = $pl.fullname
+				Tracks = [List[Track]]::new()
+			}
+			foreach($s in get-content -lp $pl.fullname -ea continue) {
+				$s = $s.trim()
+				if($s.startswith("#")) {
+					continue
+				}
+				[Track] $t = $null
+				if($tracks.TryGetValue($s, [ref] $t)) {
+					[void] $plist.tracks.add($t)
+				}
+			}
+
+			[void] $this.playlists.Add($plist.name, $plist)
 		}
 	}
 }
@@ -135,14 +180,31 @@ function :mpc {
 }
 
 function Play-Next {
-	mpc next
+	script::mpc next
+	Get-MPDStatus
 }
 
 function Play-Previous {
-	mpc prev
+	script::mpc prev
+	Get-MPDStatus
 }
 
 function Sync-Mpd {
+	[CmdletBinding()]
+	param (
+		[Parameter(HelpMessage = "Absolute path of the playlists directory")]
+		[ValidateScript({ test-path -type container $_ })]
+		[string] $PlaylistsDir,
+		[Parameter(HelpMessage = "Update mpd before loading songs")]
+		[switch] $UpdateMPD
+	)
+	if($UpdateMPD) {
+		script::mpc update -w
+	}
+
+	if($playlistsDir) {
+		$script:MPD.playlistsDir = $playlistsDir
+	}
 	$script:MPD.reload()
 }
 
@@ -456,12 +518,116 @@ function Play-Artist {
 	}
 }
 
-set-alias stra get-track
-set-alias ptra play-track
-set-alias salb Get-Album
-set-alias palb Play-Album
-set-alias sart Get-Artist
-set-alias part Play-Artist
+function Get-MPDStatus {
+	$vol = script::mpc volume | join-string { $_ -replace "^volume\:\s*", "" }
+	"$(get-track -current track)`nvolume $vol"
+}
 
-set-alias "<" Play-Previous
-set-alias ">" Play-Next
+function Get-Playlist {
+	[CmdletBinding()]
+	[OutputType([Playlist])]
+	param (
+		[Parameter(Position = 0, HelpMessage = "Name of the playlist")]
+		[string[]] $Name
+	)
+
+	foreach($x in $script:MPD.playlists.GetEnumerator()) {
+		if(!$name) {
+			$x.value
+			continue
+		}
+		foreach($n in $name) {
+			if($x.key -like $n) {
+				$x.value
+				continue
+			}
+		}
+	}
+}
+
+function Play-Playlist {
+	[CmdletBinding(DefaultParameterSetName = "query")]
+	param (
+		[Parameter(
+			ParameterSetName = "query",
+			HelpMessage = "Name of the playlist",
+			Mandatory,
+			Position = 0
+		)]
+		[string] $Name,
+		[Parameter(
+			HelpMessage = "The track name to start playing from",
+			ParameterSetName = "query",
+			Position = 1
+		)]
+		[string] $Track,
+
+		[Parameter(
+			HelpMessage = "The input playlist object",
+			ParameterSetName = "object",
+			ValueFromPipeLine,
+			Mandatory,
+			Position = 0
+		)]
+		[Playlist] $InputObject,
+
+		[Parameter(ParameterSetName = "query", HelpMessage = "Add the tracks at the end of the queue")]
+		[Parameter(ParameterSetName = "object", HelpMessage = "Add the tracks at the end of the queue")]
+		[switch] $Queue
+	)
+
+	begin {}
+	process {}
+	end {
+		$pls = if($inputObject) {
+			$inputObject
+		} else {
+			script:Get-Playlist -Name:$name | select-object -first 1
+		}
+		if(!$pls) {
+			write-warning "No playlist found"
+			return
+		}
+
+		$name = $pls.name
+		if($pls.tracks.count -eq 0) {
+			write-warning "The playlist $name has no tracks"
+			return
+		}
+
+
+		if(!$track) {
+			$index = ""
+		} else {
+			$index = -1
+			for($i = 0; $i -lt $pls.tracks.count; $i++) {
+				if($pls.tracks[$i].title -eq $track -or $pls.tracks[$i].title -like $track) {
+					$index = $i + 1
+					break
+				}
+			}
+			if($index -le 0) {
+				write-error "No track title in $name matched the given pattern"
+				return
+			}
+		}
+
+		$ntracks = script::plural $pls.tracks.count "track"
+
+		if($queue) {
+			$pls.tracks.file | mpc.exe -q add
+			if($lastExitCode -eq 0) {
+				write-information "Added $ntracks from $name to the queue"
+			}
+		} else {
+			script::mpc -ea stop clear
+			$pls.tracks.file | mpc.exe -q add
+			if($lastExitCode -eq 0) {
+				script::mpc -ea stop play $index
+				if($index) {
+					write-information "Playing $($pls.tracks[$index - 1]) from $name ($ntracks total)"
+				}
+			}
+		}
+	}
+}

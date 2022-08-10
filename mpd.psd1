@@ -12,5 +12,5 @@
 	VariablesToExport = @()
 	AliasesToExport = "*"
 
-	NestedModules = @("completions.ps1")
+	NestedModules = @("aliases.ps1", "completions.ps1")
 }
