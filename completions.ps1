@@ -27,7 +27,7 @@ function :normalize-arg {
 }
 
 "Artist", "Album", "Title" | foreach-object {
-	Register-ArgumentCompleter -CommandName Get-Track, Play-Track -ParameterName $_ -ScriptBlock {
+	Register-ArgumentCompleter -CommandName Get-Track, Play-Track, Save-Track -ParameterName $_ -ScriptBlock {
 		param($_a, $paramName, $buf, $_d, $params)
 
 		$buf = script::normalize-arg $buf
@@ -75,7 +75,7 @@ Register-ArgumentCompleter -CommandName Get-Artist, Play-Artist -ParameterName N
 	| script::quote
 }
 
-Register-ArgumentCompleter -CommandName Get-Playlist, Play-Playlist -ParameterName Name -ScriptBlock {
+$completePlaylist = {
 	param($_a, $_b, $buf, $_d, $_params)
 	$buf = script::normalize-arg $buf
 
@@ -83,6 +83,9 @@ Register-ArgumentCompleter -CommandName Get-Playlist, Play-Playlist -ParameterNa
 	| where-object { $_ -and $_ -like $buf } `
 	| script::quote
 }
+
+Register-ArgumentCompleter -CommandName Get-Playlist, Play-Playlist -ParameterName Name -ScriptBlock $completePlaylist
+Register-ArgumentCompleter -CommandName Get-Playlist, Save-Track -ParameterName Playlist -ScriptBlock $completePlaylist
 
 Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -ScriptBlock {
 	param($_a, $_b, $buf, $_d, $params)

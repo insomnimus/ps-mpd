@@ -66,12 +66,28 @@ class Track {
 	[void] Queue() {
 		script:Play-Track -queue $this
 	}
+
+	[void] Save() {
+		$this.tracks.file | join-string -separator "`n" | out-file -NoNewLine -encoding utf8 -lp $this.path
+	}
 }
 
 class Playlist {
 	[string] $Path
 	[string] $Name
 	[List[Track]] $Tracks
+
+	[string] ToString() {
+		return $this.Name
+	}
+
+	[void] Save() {
+		$err = $null
+		$this.tracks.file | join-string -separator "`n" | out-file -lp $this.path -encoding utf8 -noNewLine -ea ignore -ev err
+		if($err) {
+			throw $err.message
+		}
+	}
 }
 
 class Mpd {
@@ -557,7 +573,6 @@ function Play-Playlist {
 		[string] $Name,
 		[Parameter(
 			HelpMessage = "The track name to start playing from",
-			ParameterSetName = "query",
 			Position = 1
 		)]
 		[string] $Track,
@@ -595,7 +610,6 @@ function Play-Playlist {
 			return
 		}
 
-
 		if(!$track) {
 			$index = ""
 		} else {
@@ -626,6 +640,191 @@ function Play-Playlist {
 				script::mpc -ea stop play $index
 				if($index) {
 					write-information "Playing $($pls.tracks[$index - 1]) from $name ($ntracks total)"
+				}
+			}
+		}
+	}
+}
+
+function Save-Playlist {
+	[CmdletBinding(DefaultParameterSetName = "query")]
+	param (
+		[Parameter(
+			Position = 0,
+			ParameterSetName = "query",
+			Mandatory,
+			HelpMessage = "Name of the playlist to save"
+		)]
+		[string[]] $Name,
+
+		[Parameter(
+			Position = 0,
+			ParameterSetName = "object",
+			Mandatory,
+			HelpMessage = "The Playlist object"
+		)]
+		[Playlist[]] $InputObject
+	)
+
+	begin {
+		[List[Playlist]] $playlists = [List[Playlist]]::new()
+		if($PSCmdlet.ParameterSetName -eq "query") {
+			$playlists = Get-Playlist -Name:$Name
+		}
+	}
+
+	process {
+		if($InputObject) {
+			[void] $playlists.AddRange($InputObject)
+		}
+	}
+
+	end {
+		if($playlists.count -eq 0) {
+			write-warning "No playlist matched the given criteria"
+			return
+		}
+		foreach($p in $playlists) {
+			try {
+				$p.Save()
+				write-information "Saved playlist $($p.name)"
+			} catch {
+				write-error "error saving $($p.name) to $($p.path): $_"
+			}
+		}
+	}
+}
+
+function Save-Track {
+	[CmdletBinding(DefaultParameterSetName = "object")]
+	param (
+		[Parameter(
+			Position = 0,
+			Mandatory,
+			HelpMessage = "The playlist object or name of the playlist to save the track to"
+		)]
+		[Object[]] $Playlist,
+
+		[Parameter(
+			HelpMessage = "Name of the track to save",
+			Position = 1,
+			ParameterSetName = "query"
+		)]
+		[string[]] $title,
+		[Parameter(HelpMessage = "The name of the artist", ParameterSetName = "query")]
+		[string] $Artist,
+		[Parameter(ParameterSetName = "query", HelpMessage = "Name of the album")]
+		[string] $Album,
+
+		[Parameter(
+			Mandatory,
+			Position = 1,
+			ValueFromPipeline,
+			HelpMessage = "The input Track object",
+			ParameterSetName = "object"
+		)]
+		[Track[]] $InputObject,
+
+		[Parameter(HelpMessage = "Do not save the playlist to disk")]
+		[switch] $NoSave,
+		[Parameter(HelpMessage = "Allow adding tracks even if they are alreawdy in the playlist")]
+		[switch] $AllowDuplicates
+	)
+
+	begin {
+		[List[Playlist]] $playlists = [List[Playlist]]::new()
+		foreach($p in $playlist) {
+			if($p -is [Playlist]) {
+				[void] $playlists.Add($p)
+			} elseif($p) {
+				$pls = script:get-playlist -name:"$p"
+				if($pls.count -eq 1) {
+					[void] $playlists.Add($pls)
+				} elseif($pls.count -eq 0) {
+					write-error "No playlist matched the criteria: 4p"
+					return
+				} else {
+					[void] $playlists.AddRange($pls)
+				}
+			}
+
+			$playlists = $playlists | select-object -unique
+
+			if(!$playlists) {
+				write-warning "No palylists found"
+				return
+			}
+
+			[list[Track]] $tracks = [List[Track]]::new()
+			if($PSCmdlet.ParameterSetName -eq "query") {
+				$tracks = script:Get-Track -title:$title -artist:$artist -album:$album
+				if($tracks.count -eq 0) {
+					write-error "No tracks matched given criteria"
+					return
+				}
+			}
+		}
+ }
+
+	process {
+		if($inputObject) {
+			[void] $tracks.AddRange($inputObject)
+		}
+	}
+
+	end {
+		$tracks = $tracks | select -unique
+
+		switch($tracks.count) {
+			0 { write-error "No tracks given"; return }
+			1 {
+				$t = $tracks[0]
+				foreach($p in $playlists) {
+					if(!$allowDuplicates -and $p.tracks.exists({ $t.file -eq $args[0].file })) {
+						write-information "Skipped adding $t to $($p.name) because it already exists in the playlist"
+						continue
+					}
+					[void] $p.tracks.add($t)
+					write-information "Added $t to $($p.name)"
+					if(!$NoSave) {
+						try {
+							$p.save()
+							write-information "saved $p to $($p.path)"
+						} catch {
+							write-error "Error saving $p to $($p.path): $_"
+						}
+					}
+				}
+				break
+			}
+			default {
+				foreach($p in $playlists) {
+					$added = 0
+
+					if($allowDuplicates) {
+						[void] $p.tracks.AddRange($tracks)
+						$added = $tracks.count
+					} else {
+						foreach($t in $tracks) {
+							if($p.tracks.exists({ $t.file -eq $args[0].file })) {
+								write-information "Skipped adding $t to $p because it already exists in the playlist"
+							} else {
+								[void] $p.tracks.add($t)
+								$added++
+							}
+						}
+					}
+
+					$added = script::plural $added "track"
+					write-information "Added $added to $p"
+					if(!$noSave) {
+						try {
+							$p.save()
+							write-information "Saved $p to ($($p.path))"
+						} catch {
+							write-error "error saving $($p.name) to $($p.path): $_"
+						}
+					}
 				}
 			}
 		}
