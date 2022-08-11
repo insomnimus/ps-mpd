@@ -85,7 +85,7 @@ $completePlaylist = {
 }
 
 Register-ArgumentCompleter -CommandName Get-Playlist, Play-Playlist -ParameterName Name -ScriptBlock $completePlaylist
-Register-ArgumentCompleter -CommandName Get-Playlist, Save-Track -ParameterName Playlist -ScriptBlock $completePlaylist
+Register-ArgumentCompleter -CommandName Save-Track, Remove-Track -ParameterName Playlist -ScriptBlock $completePlaylist
 
 Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -ScriptBlock {
 	param($_a, $_b, $buf, $_d, $params)
@@ -103,6 +103,46 @@ Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -Scri
 			| script::quote
 
 			return
+		}
+	}
+}
+
+"Album", "Artist", "Title" | foreach-object {
+	Register-ArgumentCompleter -CommandName Remove-Track -ParameterName $_ -ScriptBlock {
+		param($_a, $paramName, $buf, $_d, $params)
+
+		if(!$params["Playlist"]) {
+			return
+		}
+
+		$params[$paramName] = script::normalize-arg $buf
+		[string[]] $title = $params["Title"]
+		$artist = $params["Artist"]
+		$album = $params["Album"]
+
+		$filter = {
+			param($t)
+			if((!$artist -or $t.artist -like $artist) -and (!$album -or $t.album -like $album)) {
+				if(!$title) {
+					return $true
+				}
+				foreach($s in $title) {
+					if($t.title -like $s) {
+						return $true
+					}
+				}
+			}
+			return $false
+		}
+
+		foreach($p in $params["Playlist"]) {
+			if($p -is [Playlist]) {
+				$p.tracks | where-object { $filter.invoke($_) } | select-object -expandProperty $paramName | script::quote
+			} else {
+				foreach($p in Get-Playlist -Name:"$p") {
+					$p.tracks | where-object { $filter.invoke($_) } | select-object -expandProperty $paramName | script::quote
+				}
+			}
 		}
 	}
 }

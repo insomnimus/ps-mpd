@@ -51,10 +51,13 @@ class Track {
 		return $track
 	}
 
-	[string] ToString() {
+	[string] ToString([bool] $full) {
 		$art = if($this.artist) { $this.artist } else { "?" }
 		$alb = if($this.album) { $this.album } else { "?" }
 		$tit = if($this.title) { $this.title } else { $this.file }
+		if(!$full) {
+			return "$tit [$alb] by $art"
+		}
 		$dur = if($this.duration.TotalHours -ge 1) { $this.duration.ToString() } else { "{0}:{1}" -f $this.duration.minutes, $this.duration.seconds }
 		return "$tit [$alb] by $art [$dur]"
 	}
@@ -751,7 +754,7 @@ function Save-Track {
 			$playlists = $playlists | select-object -unique
 
 			if(!$playlists) {
-				write-warning "No palylists found"
+				write-warning "No playlist found"
 				return
 			}
 
@@ -764,7 +767,7 @@ function Save-Track {
 				}
 			}
 		}
- }
+	}
 
 	process {
 		if($inputObject) {
@@ -789,7 +792,7 @@ function Save-Track {
 					if(!$NoSave) {
 						try {
 							$p.save()
-							write-information "saved $p to $($p.path)"
+							write-information "saved $p"
 						} catch {
 							write-error "Error saving $p to $($p.path): $_"
 						}
@@ -820,11 +823,147 @@ function Save-Track {
 					if(!$noSave) {
 						try {
 							$p.save()
-							write-information "Saved $p to ($($p.path))"
+							write-information "Saved $p"
 						} catch {
 							write-error "error saving $($p.name) to $($p.path): $_"
 						}
 					}
+				}
+			}
+		}
+	}
+}
+
+function Remove-Track {
+	[CmdletBinding(DefaultParameterSetName = "object")]
+	param (
+		[Parameter(
+			Position = 0,
+			Mandatory,
+			HelpMessage = "The playlist object or name of the playlist"
+		)]
+		[Object[]] $Playlist,
+
+		[Parameter(
+			HelpMessage = "Name of the track to remove",
+			Position = 1,
+			ParameterSetName = "query"
+		)]
+		[string[]] $title,
+		[Parameter(HelpMessage = "The name of the artist", ParameterSetName = "query")]
+		[string] $Artist,
+		[Parameter(ParameterSetName = "query", HelpMessage = "Name of the album")]
+		[string] $Album,
+
+		[Parameter(
+			Mandatory,
+			Position = 1,
+			ValueFromPipeline,
+			HelpMessage = "The input Track object",
+			ParameterSetName = "object"
+		)]
+		[Track[]] $InputObject,
+
+		[Parameter(HelpMessage = "Do not save the playlist to disk")]
+		[switch] $NoSave
+	)
+
+	begin {
+		[List[Playlist]] $playlists = [List[Playlist]]::new()
+		foreach($p in $playlist) {
+			if($p -is [Playlist]) {
+				[void] $playlists.Add($p)
+			} elseif($p) {
+				$pls = script:get-playlist -name:"$p"
+				if($pls.count -eq 1) {
+					[void] $playlists.Add($pls)
+				} elseif($pls.count -eq 0) {
+					write-error "No playlist matched the criteria: 4p"
+					return
+				} else {
+					[void] $playlists.AddRange($pls)
+				}
+			}
+
+			$playlists = $playlists | select-object -unique
+
+			if(!$playlists) {
+				write-warning "No playlist found"
+				return
+			}
+		}
+
+		[List[Track]] $tracks = [List[Track]]::new()
+	}
+
+	process {
+		if($inputObject) {
+			[void] $tracks.AddRange($inputObject)
+		}
+	}
+
+	end {
+		if($PSCmdlet.ParameterSetName -eq "object") {
+			foreach($p in $playlists) {
+				$n = $p.tracks.removeAll({
+						foreach($t in $tracks) {
+							if($t.file -eq $args[0].file) {
+								return $true
+							}
+						}
+						$false
+					})
+
+				if($n -eq 0) {
+					continue
+				}
+				if($tracks.count -eq 1) {
+					write-information "Removed $($tracks[0]) from $p"
+				} else {
+					$removed = script::quote $n "track"
+					write-information "Removed $removed from $p"
+				}
+			}
+			return
+		}
+
+		foreach($p in $playlists) {
+			$del = [List[Track]]::new()
+			[void] $p.tracks.removeAll({
+					param($t)
+					if((!$artist -or $t.artist -like $artist) -and (!$album -or $t.album -like $album)) {
+						if(!$title) {
+							[void] $del.Add($t)
+							return $true
+						}
+						foreach($s in $title) {
+							if($t.title -like $s) {
+								[void] $del.add($t)
+								return $true
+							}
+						}
+					}
+					$false
+				})
+
+			$del = $del | select-object -unique
+
+			if($del.count -eq 0) {
+				write-warning "No track to remove found in $p"
+				continue
+			} elseif($del.count -eq 1) {
+				write-information "Removed $($del[0].ToString($false)) from $p"
+			} else {
+				$removed = script::plural $del.count "track"
+				write-information "Removed $removed from $p"
+			}
+
+			if(!$NoSave) {
+				try {
+					$p.save()
+					write-information "Saved $p"
+				} catch {
+					write-error "Error saving $p to $($p.path): $_"
 				}
 			}
 		}
