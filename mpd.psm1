@@ -51,6 +51,10 @@ class Track {
 		return $track
 	}
 
+	[string] ToString() {
+		return $this.ToString($false)
+	}
+
 	[string] ToString([bool] $full) {
 		$art = if($this.artist) { $this.artist } else { "?" }
 		$alb = if($this.album) { $this.album } else { "?" }
@@ -535,7 +539,13 @@ function Play-Artist {
 
 function Get-MPDStatus {
 	$vol = script::mpc volume | join-string { $_ -replace "^volume\:\s*", "" }
-	"$(get-track -current track)`nvolume $vol"
+	$s = script:Get-Track -current Track
+	if($s) {
+		$s = $s.ToString($true)
+		"$s`nvolume $vol"
+	} else {
+		"Not playing anything"
+	}
 }
 
 function Get-Playlist {
@@ -780,11 +790,11 @@ function Save-Track {
 				$t = $tracks[0]
 				foreach($p in $playlists) {
 					if(!$allowDuplicates -and $p.tracks.exists({ $t.file -eq $args[0].file })) {
-						write-information "Skipped adding $t to $($p.name) because it already exists in the playlist"
+						write-information "$t is already in $p"
 						continue
 					}
 					[void] $p.tracks.add($t)
-					write-information "Added $t to $($p.name)"
+					write-information "Added $t tto $p"
 					if(!$NoSave) {
 						try {
 							$p.save()
@@ -796,6 +806,7 @@ function Save-Track {
 				}
 				break
 			}
+
 			default {
 				foreach($p in $playlists) {
 					$added = 0
@@ -806,7 +817,7 @@ function Save-Track {
 					} else {
 						foreach($t in $tracks) {
 							if($p.tracks.exists({ $t.file -eq $args[0].file })) {
-								write-information "Skipped adding $t to $p because it already exists in the playlist"
+								write-information "$t is already in $p"
 							} else {
 								[void] $p.tracks.add($t)
 								$added++
@@ -948,7 +959,7 @@ function Remove-Track {
 				write-warning "No track to remove found in $p"
 				continue
 			} elseif($del.count -eq 1) {
-				write-information "Removed $($del[0].ToString($false)) from $p"
+				write-information "Removed $($del[0]) from $p"
 			} else {
 				$removed = script::plural $del.count "track"
 				write-information "Removed $removed from $p"
