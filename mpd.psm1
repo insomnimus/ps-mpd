@@ -69,10 +69,6 @@ class Track {
 	[void] Queue() {
 		script:Play-Track -queue $this
 	}
-
-	[void] Save() {
-		$this.tracks.file | join-string -separator "`n" | out-file -NoNewLine -encoding utf8 -lp $this.path
-	}
 }
 
 class Playlist {
