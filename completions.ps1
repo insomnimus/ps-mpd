@@ -146,3 +146,19 @@ Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -Scri
 		}
 	}
 }
+
+"Album", "Artist", "Title" | foreach-object {
+	Register-ArgumentCompleter -CommandName Seek-Queue -ParameterName $_ -ScriptBlock {
+		param($_a, $paramName, $buf, $_d, $params)
+
+		$params[$paramName] = script::normalize-arg $buf
+		$title = $params["Title"]
+		$artist = $params["Artist"]
+		$album = $params["Album"]
+
+		script:Get-Track -Current Playlist `
+		| where-object { $_.matches($title, $artist, $album) } `
+		| select-object -expandProperty $paramName `
+		| script::quote
+	}
+}

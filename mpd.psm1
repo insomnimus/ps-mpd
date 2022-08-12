@@ -73,12 +73,29 @@ class Track {
 	[void] Queue() {
 		script:Play-Track -queue $this
 	}
+
+	[bool] Matches([string[]] $title, [string] $artist, [string] $album) {
+		if((!$album -or $this.album -like $album) -and (!$artist -or $this.artist -like $artist)) {
+			if(!$title) {
+				return $true
+			}
+			if(!$this.title) {
+				return $false
+			}
+			foreach($t in $title) {
+				if($this.title -like $t) {
+					return $true
+				}
+			}
+		}
+		return $false
+	}
 }
 
 class MPDStatus {
 	[Track] $Track
 	[int] $Volume
-	
+
 	[string] ToString() {
 		return "$($this.track)`volume $($this.volume)%"
 	}
@@ -550,7 +567,7 @@ function Get-MPDStatus {
 	[CmdletBinding()]
 	[OutputType([MPDStatus])]
 	param ()
-	
+
 	$vol = script::mpc volume | join-string { $_ -replace "^volume\:\s*", "" }
 	$t = script:Get-Track -current Track
 	[MPDStatus] @{
@@ -740,9 +757,11 @@ function Save-Track {
 			Mandatory,
 			Position = 1,
 			ValueFromPipeline,
+			ValueFromPipelineByPropertyName,
 			HelpMessage = "The input Track object",
 			ParameterSetName = "object"
 		)]
+		[Alias("Track")]
 		[Track[]] $InputObject,
 
 		[Parameter(HelpMessage = "Do not save the playlist to disk")]
@@ -805,7 +824,7 @@ function Save-Track {
 						continue
 					}
 					[void] $p.tracks.add($t)
-					write-information "Added $t tto $p"
+					write-information "Added $t to $p"
 					if(!$NoSave) {
 						try {
 							$p.save()
@@ -877,9 +896,11 @@ function Remove-Track {
 			Mandatory,
 			Position = 1,
 			ValueFromPipeline,
+			ValueFromPipelineByPropertyName,
 			HelpMessage = "The input Track object",
 			ParameterSetName = "object"
 		)]
+		[Alias("Track")]
 		[Track[]] $InputObject,
 
 		[Parameter(HelpMessage = "Do not save the playlist to disk")]
@@ -984,6 +1005,127 @@ function Remove-Track {
 					write-error "Error saving $p to $($p.path): $_"
 				}
 			}
+		}
+	}
+}
+
+function Seek-Queue {
+	[CmdletBinding()]
+	param (
+		[Parameter(
+			ValueFromPipelineByPropertyName,
+			Position = 0,
+			HelpMessage = "The title of a song from the current queue to seek to"
+		)]
+		[string] $Title,
+		[Parameter(
+			HelpMessage = "The name of the artist",
+			ValueFromPipelineByPropertyName
+		)]
+		[string] $Artist,
+		[Parameter(
+			HelpMessage = "Name of the album",
+			ValueFromPipelineByPropertyName
+		)]
+		[string] $Album
+	)
+
+	begin {
+		if(!$title -and !$artist -and !$album) {
+			write-error "You must specify at least one of 'Title', 'Artist' or 'Album'"
+			return
+		}
+	}
+
+	process {}
+
+	end {
+		$i = 1
+		foreach($t in script:get-track -current playlist) {
+			if($t.matches($title, $artist, $album)) {
+				script::mpc play $i
+				if($?) {
+					write-information "Playing track $i ($t)"
+				}
+				return
+			}
+			$i++
+		}
+
+		write-error "No track in the queue matched the given criteria"
+	}
+}
+
+function Select-Track {
+	[CmdletBinding()]
+	[OutputType([Track])]
+	param (
+		[Parameter(Position = 0, HelpMessage = "The track title to match")]
+		[string[]] $Title,
+		[Parameter(HelpMessage = "The Artist name to match")]
+		[string[]] $Artist,
+		[Parameter(HelpMessage = "The album name to match")]
+		[string[]] $Album,
+
+		[Parameter(HelpMessage = "Select first N tracks that match the criteria")]
+		[uint] $First,
+
+		[Parameter(
+			ValueFromPipeLine,
+			ValueFromPipeLineByPropertyName,
+			HelpMessage = "The input Track object"
+		)]
+		[Alias("Track")]
+		[Track[]] $InputObject
+	)
+
+	begin {
+		[uint] $n = 0
+		$takeFirst = $psBoundParameters.ContainsKey("First")
+	}
+	process {
+		foreach($t in $inputObject) {
+			if($takeFirst -and $n -ge $first) {
+				return
+			}
+			if($artist) {
+				if(!$t.artist) { continue }
+				$found = $false
+				foreach($a in $artist) {
+					if($t.artist -like $a) {
+						$found = $true
+						break
+					}
+				}
+				if(!$found) { continue }
+			}
+
+			if($album) {
+				if(!$t.album) { continue }
+				$found = $false
+				foreach($a in $album) {
+					if($t.album -like $a) {
+						$found = $true
+						break
+					}
+				}
+				if(!$found) { continue }
+			}
+
+			if($title) {
+				if(!$t.title) { continue }
+				$found = $false
+				foreach($s in $title) {
+					if($t.title -like $s) {
+						$found = $true
+						break
+					}
+				}
+				if(!$found) { continue }
+			}
+
+			write-output $t
+			$n++
 		}
 	}
 }

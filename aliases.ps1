@@ -10,6 +10,7 @@ $aliases = @{
 	"<" = "Play-Previous"
 	">" = "Play-Next"
 	cur = "Get-MPDStatus"
+	sct = "Select-Track"
 }
 
 foreach($x in $aliases.GetEnumerator()) {
