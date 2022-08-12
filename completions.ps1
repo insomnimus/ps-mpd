@@ -30,8 +30,7 @@ function :normalize-arg {
 	Register-ArgumentCompleter -CommandName Get-Track, Play-Track, Save-Track -ParameterName $_ -ScriptBlock {
 		param($_a, $paramName, $buf, $_d, $params)
 
-		$buf = script::normalize-arg $buf
-		$params[$paramName] = $buf
+		$params[$paramName] = script::normalize-arg $buf
 		$params = @{
 			Artist = $params["Artist"]
 			Album = $params["Album"]
@@ -120,6 +119,7 @@ Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -Scri
 		$artist = $params["Artist"]
 		$album = $params["Album"]
 
+		<#
 		$filter = {
 			param($t)
 			if((!$artist -or $t.artist -like $artist) -and (!$album -or $t.album -like $album)) {
@@ -134,13 +134,16 @@ Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -Scri
 			}
 			return $false
 		}
+#>
 
 		foreach($p in $params["Playlist"]) {
 			if($p -is [Playlist]) {
-				$p.tracks | where-object { $filter.invoke($_) } | select-object -expandProperty $paramName | script::quote
+				# $p.tracks | where-object { $filter.invoke($_) } | select-object -expandProperty $paramName | script::quote
+				$p.tracks | script:select-track -title:$title -artist:$artist -album:$album | select-object -expandProperty $paramName | where-object { $_ } | script::quote
 			} else {
 				foreach($p in Get-Playlist -Name:"$p") {
-					$p.tracks | where-object { $filter.invoke($_) } | select-object -expandProperty $paramName | script::quote
+					# $p.tracks | where-object { $filter.invoke($_) } | select-object -expandProperty $paramName | script::quote
+					$p.tracks | script:select-track -title:$title -artist:$artist -album:$album | select-object -expandProperty $paramName | where-object { $_ } | script::quote
 				}
 			}
 		}
@@ -157,8 +160,9 @@ Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -Scri
 		$album = $params["Album"]
 
 		script:Get-Track -Current Playlist `
-		| where-object { $_.matches($title, $artist, $album) } `
+		| script:select-track -title:$title -artist:$artist -album:$album `
 		| select-object -expandProperty $paramName `
+		| where-object { $_ } `
 		| script::quote
 	}
 }

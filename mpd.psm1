@@ -274,29 +274,23 @@ function Get-Track {
 		)]
 		[string] $Album,
 
-		[Parameter(Mandatory, ParameterSetName = "current", HelpMessage = "Get the currently playing song or playlist")]
-		[ValidateSet("Track", "Playlist")]
-		[string]$Current
+		[Parameter(ParameterSetName = "current-track", HelpMessage = "Get the currently playing song")]
+		[switch]$Playing,
+		[Parameter(HelpMessage = "Get the playing queue", ParameterSetName = "current-queue")]
+		[switch] $Queue
 	)
 
-	if($current -eq "Track") {
+	if($playing) {
 		script::mpc -f $script:fmt current | foreach-object { [Track]::parse($_) }
 		return
-	} elseif($current -eq "Playlist") {
+	} elseif($queue) {
 		script::mpc -f $fmt playlist | foreach-object { [Track]::Parse($_) }
 		return
 	}
 
 	foreach($x in $script:MPD.artists.getEnumerator()) {
 		if(!$artist -or $x.key -like $artist) {
-			$x.value | where-object {
-				if($album -and $_.album -notlike $album) { return $false }
-				if(!$title) { return $true }
-				foreach($t in $title) {
-					if($_.title -like $t) { return $true }
-				}
-				$false
-			}
+			$x.value | script:Select-Track -title:$title -album:$album
 		}
 	}
 }
@@ -569,7 +563,7 @@ function Get-MPDStatus {
 	param ()
 
 	$vol = script::mpc volume | join-string { $_ -replace "^volume\:\s*", "" }
-	$t = script:Get-Track -current Track
+	$t = script:Get-Track -playing
 	[MPDStatus] @{
 		Track = $t
 		Volume = $vol.trim("%")
@@ -581,6 +575,7 @@ function Get-Playlist {
 	[OutputType([Playlist])]
 	param (
 		[Parameter(Position = 0, HelpMessage = "Name of the playlist")]
+		[Alias("Playlist")]
 		[string[]] $Name
 	)
 
