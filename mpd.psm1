@@ -75,6 +75,15 @@ class Track {
 	}
 }
 
+class MPDStatus {
+	[Track] $Track
+	[int] $Volume
+	
+	[string] ToString() {
+		return "$($this.track)`volume $($this.volume)%"
+	}
+}
+
 class Playlist {
 	[string] $Path
 	[string] $Name
@@ -218,7 +227,7 @@ function Sync-Mpd {
 		[switch] $UpdateMPD
 	)
 	if($UpdateMPD) {
-		script::mpc update -w
+		mpc.exe -q update -w
 	}
 
 	if($playlistsDir) {
@@ -538,13 +547,15 @@ function Play-Artist {
 }
 
 function Get-MPDStatus {
+	[CmdletBinding()]
+	[OutputType([MPDStatus])]
+	param ()
+	
 	$vol = script::mpc volume | join-string { $_ -replace "^volume\:\s*", "" }
-	$s = script:Get-Track -current Track
-	if($s) {
-		$s = $s.ToString($true)
-		"$s`nvolume $vol"
-	} else {
-		"Not playing anything"
+	$t = script:Get-Track -current Track
+	[MPDStatus] @{
+		Track = $t
+		Volume = $vol.trim("%")
 	}
 }
 

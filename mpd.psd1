@@ -12,5 +12,6 @@
 	VariablesToExport = @()
 	AliasesToExport = "*"
 
+	FormatsToProcess = @("MPDStatus.format.ps1xml")
 	NestedModules = @("aliases.ps1", "completions.ps1")
 }
