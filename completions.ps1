@@ -85,6 +85,7 @@ $completePlaylist = {
 
 Register-ArgumentCompleter -CommandName Get-Playlist, Play-Playlist -ParameterName Name -ScriptBlock $completePlaylist
 Register-ArgumentCompleter -CommandName Save-Track, Remove-Track -ParameterName Playlist -ScriptBlock $completePlaylist
+Register-ArgumentCompleter -CommandName Save-Playing -ParameterName Name -ScriptBlock $completePlaylist
 
 Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -ScriptBlock {
 	param($_a, $_b, $buf, $_d, $params)

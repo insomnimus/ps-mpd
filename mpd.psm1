@@ -99,6 +99,11 @@ class MPDStatus {
 	[string] ToString() {
 		return "$($this.track)`volume $($this.volume)%"
 	}
+
+	MPDStatus([Track] $track, [int32] $vol) {
+		$this.track = $track
+		$this.volume = $vol
+	}
 }
 
 class Playlist {
@@ -563,11 +568,11 @@ function Get-MPDStatus {
 	param ()
 
 	$vol = script::mpc volume | join-string { $_ -replace "^volume\:\s*", "" }
-	$t = script:Get-Track -playing
-	[MPDStatus] @{
-		Track = $t
-		Volume = $vol.trim("%")
+	if($vol -eq "n/a") {
+		$vol = "-1"
 	}
+	$t = script:Get-Track -playing
+	[MPDStatus]::new($t, $vol.trim("%"))
 }
 
 function Get-Playlist {
@@ -1122,5 +1127,57 @@ function Select-Track {
 			write-output $t
 			$n++
 		}
+	}
+}
+
+function Save-Playing {
+	[CmdletBinding(DefaultParameterSetName = "query")]
+	param (
+		[Parameter(
+			Position = 0,
+			Mandatory,
+			HelpMessage = "The name of the playlist to save to",
+			ParameterSetName = "query"
+		)]
+		[string[]] $Name,
+
+		[Parameter(
+			Position = 0,
+			Mandatory,
+			ValueFromPipeline,
+			HelpMessage = "The input Playlist object",
+			ParameterSetName = "object"
+		)]
+		[Playlist[]] $InputObject,
+
+		[Parameter(HelpMessage = "Allow adding duplicates")]
+		[switch] $AllowDuplicates
+	)
+
+	begin {
+		$t = get-track -playing
+		if(!$t) {
+			write-error "Not playing anything"
+			return
+		}
+		[List[Playlist]] $playlists = @()
+		if($PSCmdlet.ParameterSetName -eq "query") {
+			$playlists = script:get-playlist -name:$name
+		}
+	}
+
+	process {
+		if($InputObject) {
+			[void] $playlists.AddRange($InputObject)
+		}
+	}
+
+	end {
+		$playlists = $playlists | select-object -unique
+		if($playlists.count -eq 0) {
+			write-error "No playlist matched the given criteria"
+			return
+		}
+		$t | save-track $playlists
 	}
 }
