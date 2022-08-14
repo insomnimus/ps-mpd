@@ -160,7 +160,7 @@ Register-ArgumentCompleter -CommandName Play-Playlist -ParameterName Track -Scri
 		$artist = $params["Artist"]
 		$album = $params["Album"]
 
-		script:Get-Track -Current Playlist `
+		script:Get-Track -queue `
 		| script:select-track -title:$title -artist:$artist -album:$album `
 		| select-object -expandProperty $paramName `
 		| where-object { $_ } `

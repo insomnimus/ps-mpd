@@ -1041,7 +1041,7 @@ function Seek-Queue {
 
 	end {
 		$i = 1
-		foreach($t in script:get-track -current playlist) {
+		foreach($t in script:get-track -queue) {
 			if($t.matches($title, $artist, $album)) {
 				script::mpc play $i
 				if($?) {
