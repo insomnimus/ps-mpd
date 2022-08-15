@@ -14,6 +14,21 @@
 								<PropertyName>Track</PropertyName>
 							</ListItem>
 							<ListItem>
+							<Label>Duration</Label>
+							<ScriptBlock>
+							function _plural([int] $n, [string] $s) { if($n -eq 1) { "1 $s" } else { "$n ${s}s" } }
+							if($_.track) {
+								if($_.track.duration.totalHours -ge 1.0) {
+									"{0} {1} {2}" -f (_plural $_.track.duration.Hours "hour"), (_plural $_.track.duration.minutes "minute"), (_plural $_.track.duration "second")
+								} elseif($_.track.duration.totalMinutes -ge 1.0) {
+									"{0} {1}" -f (_plural $_.track.duration.minutes "minute"), (_plural $_.track.duration.seconds "second")
+								} else {
+									_plural $_.track.duration.seconds "second"
+								}
+							} else { "N/A" }
+							</ScriptBlock>
+							</ListItem>
+							<ListItem>
 								<FormatString>{0}%</FormatString>
 								<PropertyName>Volume</PropertyName>
 							</ListItem>

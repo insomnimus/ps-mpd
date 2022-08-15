@@ -15,10 +15,21 @@ function :normalize-arg {
 	)
 
 	if($buf.startswith("'")) {
-		$buf = $buf.trim("'")
+		if($buf.length -gt 1 -and $buf.endsWith("'")) {
+			$buf = $buf.substring(1, $buf.length - 2)
+		} else {
+			$buf = $buf.substring(1)
+		}
 	} elseif($buf.startswith('"')) {
-		$buf = $buf.trim('"')
+		if($buf.length -gt 1 -and $buf.endsWith('"')) {
+			$buf = $buf.substring(1, $buf.length - 2)
+		} else {
+			$buf = $buf.substring(1)
+		}
 	}
+
+	if($null -eq $buf) { $buf = "" }
+
 	if(!$buf.endswith("*")) {
 		$buf += "*"
 	}
