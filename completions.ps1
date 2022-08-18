@@ -28,7 +28,7 @@ function :normalize-arg {
 		}
 	}
 
-	if($null -eq $buf) { $buf = "" }
+	if($null -eq $buf) { $buf = "*" }
 
 	if(!$buf.endswith("*")) {
 		$buf += "*"

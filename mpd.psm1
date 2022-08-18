@@ -171,6 +171,7 @@ class Mpd {
 				Path = $pl.fullname
 				Tracks = [List[Track]]::new()
 			}
+
 			foreach($s in get-content -lp $pl.fullname -ea continue) {
 				$s = $s.trim()
 				if($s.startswith("#")) {
@@ -961,6 +962,15 @@ function Remove-Track {
 				} else {
 					$removed = script::quote $n "track"
 					write-information "Removed $removed from $p"
+				}
+
+				if(!$NoSave -and $n -gt 0) {
+					try {
+						$p.save()
+						write-information "Saved $p to disk"
+					} catch {
+						write-error "Error saving $p to disk: $_"
+					}
 				}
 			}
 			return
