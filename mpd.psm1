@@ -295,7 +295,7 @@ function Get-Track {
 	}
 
 	foreach($x in $script:MPD.artists.getEnumerator()) {
-		if(!$artist -or $x.key -like $artist) {
+		if(!$artist -or $x.key -like $artist -or $x.key -eq $artist) {
 			$x.value | script:Select-Track -title:$title -album:$album
 		}
 	}
@@ -1102,7 +1102,7 @@ function Select-Track {
 				if(!$t.artist) { continue }
 				$found = $false
 				foreach($a in $artist) {
-					if($t.artist -like $a) {
+					if($t.artist -like $a -or $t.artist -eq $a) {
 						$found = $true
 						break
 					}
@@ -1114,7 +1114,7 @@ function Select-Track {
 				if(!$t.album) { continue }
 				$found = $false
 				foreach($a in $album) {
-					if($t.album -like $a) {
+					if($t.album -like $a -or $t.album -eq $a) {
 						$found = $true
 						break
 					}
@@ -1126,7 +1126,7 @@ function Select-Track {
 				if(!$t.title) { continue }
 				$found = $false
 				foreach($s in $title) {
-					if($t.title -like $s) {
+					if($t.title -like $s -or $t.title -eq $s) {
 						$found = $true
 						break
 					}
