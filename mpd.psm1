@@ -238,7 +238,7 @@ function :mpc {
 		[parameter(position = 0, valueFromRemainingArguments)]
 		[object[]] $Command
 	)
-	mpc.exe -q $command
+	mpc -q $command
 	if($LastExitCode -ne 0) {
 		write-error "mpc process exited with $lastExitCode"
 	}
@@ -264,7 +264,7 @@ function Sync-Mpd {
 		[switch] $UpdateMPD
 	)
 	if($UpdateMPD) {
-		mpc.exe -q update -w
+		mpc -q update -w
 	}
 
 	if($playlistsDir) {
@@ -365,7 +365,7 @@ function Play-Track {
 			if(!$queue) {
 				script::mpc clear
 			}
-			$tracks.file | mpc.exe -q add
+			$tracks.file | mpc -q add
 			if(!$queue) {
 				script::mpc play
 			}
@@ -681,13 +681,13 @@ function Play-Playlist {
 		$ntracks = script::plural $pls.tracks.count "track"
 
 		if($queue) {
-			$pls.tracks.file | mpc.exe -q add
+			$pls.tracks.file | mpc -q add
 			if($lastExitCode -eq 0) {
 				write-information "Added $ntracks from $name to the queue"
 			}
 		} else {
 			script::mpc -ea stop clear
-			$pls.tracks.file | mpc.exe -q add
+			$pls.tracks.file | mpc -q add
 			if($lastExitCode -eq 0) {
 				script::mpc -ea stop play $index
 				if($index) {
