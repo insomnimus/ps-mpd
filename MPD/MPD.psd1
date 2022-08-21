@@ -1,5 +1,5 @@
 @{
-	RootModule = "mpd.psm1"
+	RootModule = "MPD.psm1"
 	ModuleVersion = "0.1.0"
 	GUID = "b2e868c9-4a29-4aac-bab8-1edcee8bc142"
 	Author = "Taylan Gökkaya <insomnimus@protonmail.com>"

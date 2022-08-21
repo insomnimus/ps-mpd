@@ -3,6 +3,10 @@ Powershell commands for the [Music Player Daemon (MPD)](https://github.com/Music
 
 This module provides handy high-level commands to control MPD.
 
+## Documentation
+- [Brief overview](documentation.md)
+- [List of commands](docs/)
+
 ## Features
 - Tab complete titles, artists, albums and playlists.
 - Load your library as Powershell objects.
@@ -15,13 +19,14 @@ This module provides handy high-level commands to control MPD.
 
 ## Usage
 1. Import the module either manually or in your Powershell profile: `Import-Module MPD`.
-2. Load your music library: `Sync-Mpd`.
+2. Load your music library: `Sync-MPD`.
 
-Now you can use commands that work on your music collection. Documentation coming soon.
+Now you can use commands that work on your music library.
 
 ## Installation
 ```powershell
-git clone https://github.com/insomnimus/ps-mpd mpd
-# move `mpd` to somewhere where powershell automatically loads modules from
+git clone https://github.com/insomnimus/ps-mpd
+cd ps-mpd
+# move `MPD` to somewhere where powershell automatically loads modules from
 # e.g: `$env:PSModulePath.Split(";")[-1]`
 ```
