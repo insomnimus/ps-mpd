@@ -2,6 +2,7 @@ using namespace System.Collections.Generic
 
 $script:MPD = [Mpd]::new()
 $script:fmt = "%artist%`u{1}%title%`u{1}%album%`u{1}%time%`u{1}%track%`u{1}%file%"
+$script:ModTimes = @{}
 
 $ExecutionContext.SessionState.Module.OnRemove += {
 	$script:MPD.artists.clear()
@@ -115,11 +116,23 @@ class Playlist {
 		return $this.Name
 	}
 
-	[void] Save() {
+	[void] Save([bool] $force) {
 		$err = $null
+		if(!$force) {
+			$f = get-item -lp $this.path -ea ignore -ev err
+			if($err) { throw $err.message }
+			if($f.lastWriteTimeUtc -gt $script:ModTimes[$this.path]) {
+				throw "the playlist file has been modified since load and the Force parameter is not set"
+			}
+		}
+
 		$this.tracks.file | join-string -separator "`n" | out-file -lp $this.path -encoding utf8 -noNewLine -ea ignore -ev err
 		if($err) {
 			throw $err.message
+		}
+		$f = get-item -ea ignore -lp $this.path
+		if($f) {
+			$script:ModTimes[$this.path] = $f.LastWriteTimeUTC
 		}
 	}
 }
@@ -165,7 +178,8 @@ class Mpd {
 			return
 		}
 
-		foreach($pl in get-childitem -lp $this.playlistsDir -file -filter "*.m3u") {
+		foreach($pl in get-childitem -recurse -lp $this.playlistsDir -file -filter "*.m3u") {
+			$script:ModTimes[$pl.fullname] = $pl.LastWriteTimeUTC
 			$plist = [Playlist] @{
 				Name = $pl.basename
 				Path = $pl.fullname
@@ -724,8 +738,8 @@ function Save-Playlist {
 		}
 		foreach($p in $playlists) {
 			try {
-				$p.Save()
-				write-information "Saved playlist $($p.name)"
+				$p.Save($true)
+				write-information "Saved playlist $p"
 			} catch {
 				write-error "error saving $($p.name) to $($p.path): $_"
 			}
@@ -766,9 +780,12 @@ function Save-Track {
 		[Track[]] $InputObject,
 
 		[Parameter(HelpMessage = "Do not save the playlist to disk")]
+		[Alias("NS")]
 		[switch] $NoSave,
 		[Parameter(HelpMessage = "Allow adding tracks even if they are alreawdy in the playlist")]
-		[switch] $AllowDuplicates
+		[switch] $AllowDuplicates,
+		[Parameter(HelpMessage = "Overwrite any externally made changes since last sync")]
+		[switch] $Force
 	)
 
 	begin {
@@ -820,15 +837,19 @@ function Save-Track {
 			1 {
 				$t = $tracks[0]
 				foreach($p in $playlists) {
+					$save = $force
 					if(!$allowDuplicates -and $p.tracks.exists({ $t.file -eq $args[0].file })) {
 						write-information "$t is already in $p"
-						continue
+						$save = $force
+					} else {
+						$save = !$NoSave
+						[void] $p.tracks.add($t)
+						write-information "Added $t to $p"
 					}
-					[void] $p.tracks.add($t)
-					write-information "Added $t to $p"
-					if(!$NoSave) {
+
+					if(!$NoSave -and $save) {
 						try {
-							$p.save()
+							$p.save($force)
 							write-information "saved $p"
 						} catch {
 							write-error "Error saving $p to $($p.path): $_"
@@ -860,7 +881,7 @@ function Save-Track {
 					write-information "Added $added to $p"
 					if(!$noSave) {
 						try {
-							$p.save()
+							$p.save($force)
 							write-information "Saved $p"
 						} catch {
 							write-error "error saving $($p.name) to $($p.path): $_"
@@ -905,7 +926,9 @@ function Remove-Track {
 		[Track[]] $InputObject,
 
 		[Parameter(HelpMessage = "Do not save the playlist to disk")]
-		[switch] $NoSave
+		[switch] $NoSave,
+		[Parameter(HelpMessage = "Force overwriting any externally made changes since last sync")]
+		[switch] $Force
 	)
 
 	begin {
@@ -954,19 +977,19 @@ function Remove-Track {
 						$false
 					})
 
-				if($n -eq 0) {
+				if($n -eq 0 -and -not $force) {
 					continue
 				}
-				if($tracks.count -eq 1) {
+				if($n -ne 0 -and $tracks.count -eq 1) {
 					write-information "Removed $($tracks[0]) from $p"
-				} else {
+				} elseif($n -ne 0) {
 					$removed = script::quote $n "track"
 					write-information "Removed $removed from $p"
 				}
 
-				if(!$NoSave -and $n -gt 0) {
+				if(!$NoSave -and ($force -or $n -gt 0)) {
 					try {
-						$p.save()
+						$p.save($force)
 						write-information "Saved $p to disk"
 					} catch {
 						write-error "Error saving $p to disk: $_"
@@ -999,7 +1022,7 @@ function Remove-Track {
 
 			if($del.count -eq 0) {
 				write-warning "No track to remove found in $p"
-				continue
+				if(!$force -or $noSave) { continue }
 			} elseif($del.count -eq 1) {
 				write-information "Removed $($del[0]) from $p"
 			} else {
@@ -1009,7 +1032,7 @@ function Remove-Track {
 
 			if(!$NoSave) {
 				try {
-					$p.save()
+					$p.save($force)
 					write-information "Saved $p"
 				} catch {
 					write-error "Error saving $p to $($p.path): $_"
@@ -1161,7 +1184,9 @@ function Save-Playing {
 		[Playlist[]] $InputObject,
 
 		[Parameter(HelpMessage = "Allow adding duplicates")]
-		[switch] $AllowDuplicates
+		[switch] $AllowDuplicates,
+		[Parameter(HelpMessage = "Force overwriting any externally made changes since last sync")]
+		[switch] $Force
 	)
 
 	begin {
@@ -1188,6 +1213,6 @@ function Save-Playing {
 			write-error "No playlist matched the given criteria"
 			return
 		}
-		$t | save-track $playlists
+		$t | save-track $playlists -force:$force
 	}
 }
