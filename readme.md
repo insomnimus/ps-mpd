@@ -24,6 +24,18 @@ This module provides handy high-level commands to control MPD.
 Now you can use commands that work on your music library.
 
 ## Installation
+### With Scoop (Recommended on Windows)
+1. Add [my bucket](https://github.com/insomnimus/scoop-bucket) to scoop:
+	`scoop bucket add insomnia https://github.com/insomnimus/scoop-bucket`
+2. Update scoop:
+	`scoop update`
+3. Install the module:
+	`scoop install ps-mpd`
+4. (If you don't have mpd or mpc, you can get it from scoop as well):
+	`scoop install mpd mpc`
+5. Restart Powershell.
+
+### Install Manually
 ```powershell
 git clone https://github.com/insomnimus/ps-mpd
 cd ps-mpd
