@@ -663,7 +663,7 @@ function Play-Playlist {
 		}
 
 		if(!$track) {
-			$index = ""
+			$index = $null
 		} else {
 			$index = -1
 			for($i = 0; $i -lt $pls.tracks.count; $i++) {

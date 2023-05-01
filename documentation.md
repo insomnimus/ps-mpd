@@ -124,7 +124,7 @@ Seeks to a track in the current queue.
 
 ### [Select-Track](docs/Select-Track.md)
 Aliases:
-- `sct`
+- `slt`
 Filters tracks by title, artist and album.
  Every parameter specified will narrow down the filter. Specifying multiple values per-parameter will make the filter more general.
 
