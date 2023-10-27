@@ -10,6 +10,27 @@ $ExecutionContext.SessionState.Module.OnRemove += {
 	$script:MPD = $null
 }
 
+function :norm {
+	[CmdletBinding()]
+	[OutputType([string])]
+	param (
+		[Parameter(Mandatory, Position = 0)]
+		[AllowemptyString()]
+		[string] $s
+	)
+
+	$s = $s.Normalize([Text.NormalizationForm]::FormD)
+	$buf = [Text.StringBuilder]::new($s.length)
+	foreach($c in $s.EnumerateRunes()) {
+		$cat = [Text.Rune]::GetUnicodeCategory($c)
+		if($cat -ne [Globalization.UnicodeCategory]::NonSpacingMark) {
+			[void] $buf.append($c)
+		}
+	}
+
+	$buf.ToString().Normalize([Text.NormalizationForm]::FormC)
+}
+
 class Track {
 	[string] $Title
 	[string] $Artist
@@ -18,6 +39,10 @@ class Track {
 	[int] $TrackNo
 	[string] $File
 
+	hidden [string] $normTitle
+	hidden [string] $normArtist
+	hidden [string] $normAlbum
+
 	static [Track] Parse([string]$s) {
 		$c = [char]1
 		$_artist, $_title, $_album, $_duration, $_trackno, $_file = $s.split($c) | foreach-object { $_.trim() }
@@ -25,6 +50,7 @@ class Track {
 			return $null
 		}
 		$split = "$_duration".split(":")
+
 		$_duration = switch($split.count) {
 			1 { [TimeSpan]::new(0, 0, $split[0]); break }
 			2 { [TimeSpan]::new(0, $split[0], $split[1]); break }
@@ -36,6 +62,7 @@ class Track {
 			}
 			default { [TimeSpan]::Zero }
 		}
+
 		$n = 0
 		if(-not [int]::TryParse($_trackno, [ref] $n)) {
 			$n = -1
@@ -48,6 +75,9 @@ class Track {
 			Duration = $_duration
 			TrackNo = $n
 			File = $_file
+			normTitle = script::norm $_title
+			normArtist = script::norm $_artist
+			normAlbum = script::norm $_album
 		}
 		return $track
 	}
@@ -76,7 +106,7 @@ class Track {
 	}
 
 	[bool] Matches([string[]] $title, [string] $artist, [string] $album) {
-		if((!$album -or $this.album -like $album) -and (!$artist -or $this.artist -like $artist)) {
+		if((!$album -or $this.normAlbum, $this.Album -like $album) -and (!$artist -or $this.normArtist, $this.Artist -like $artist)) {
 			if(!$title) {
 				return $true
 			}
@@ -84,7 +114,7 @@ class Track {
 				return $false
 			}
 			foreach($t in $title) {
-				if($this.title -like $t) {
+				if($this.normTitle, $this.title -like $t) {
 					return $true
 				}
 			}
@@ -207,6 +237,15 @@ class Album {
 	[string] $Artist
 	[Track[]] $Tracks
 
+	hidden [string] $_normName
+
+	hidden $__init__ = {
+		$this | Add-Member -typeName string ScriptProperty normName {
+			if($this._normName) { return $this._normName }
+			else { return ($this._normName = script::norm $this.name) }
+		}
+	}
+
 	[string] ToString() {
 		$_name = if($this.name) { $this.name } else { "?" }
 		$_artist = if($this.artist) { $this.artist } else { "?" }
@@ -217,6 +256,15 @@ class Album {
 class Artist {
 	[string] $Name
 	[Album[]] $Albums
+
+	hidden [string] $_normName
+
+	hidden $__init__ = {
+		$this | Add-Member -typeName string ScriptProperty normName {
+			if($this._normName) { return $this._normName }
+			else { return ($this._normName = script::norm $this.name) }
+		}
+	}
 }
 
 function :plural {
@@ -308,11 +356,7 @@ function Get-Track {
 		return
 	}
 
-	foreach($x in $script:MPD.artists.getEnumerator()) {
-		if(!$artist -or $x.key -like $artist -or $x.key -eq $artist) {
-			$x.value | script:Select-Track -title:$title -album:$album
-		}
-	}
+	$script:MPD.artists.values | script:Select-Track -title:$title -album:$album -artist:$artist
 }
 
 function Play-Track {
@@ -355,11 +399,13 @@ function Play-Track {
 			$tracks = Get-Track -artist:$artist -album:$album -title:$title
 		}
 	}
+
 	process {
 		if($track) {
 			[void] $tracks.AddRange($track)
 		}
 	}
+
 	end {
 		if($tracks) {
 			if(!$queue) {
@@ -398,15 +444,8 @@ function Get-Album {
 		[string] $Artist
 	)
 
-	$res = if($name) {
-		foreach($n in $name) {
-			script:get-track -artist:$artist -album:$n
-		}
-	} else {
-		script:get-track -artist:$artist
-	}
-
-	$res `
+	$script:MPD.artists.values |
+	script:select-track -artist:$artist -album:$name `
 		# TODO: make it select unique by file name
 	| select-object -unique `
 	| group-object -property Album `
@@ -414,7 +453,7 @@ function Get-Album {
 		[Album] @{
 			Name = $_.Name
 			artist = $_.group[0].artist
-			tracks = ($_.group | sort-object -stable -property trackNo)
+			tracks = $_.group | sort-object -stable -property trackNo
 		}
 	}
 }
@@ -447,6 +486,7 @@ function Play-Album {
 			$albums = script:Get-Album -name:$name -artist:$artist
 		}
 	}
+
 	process {
 		if($inputObject) {
 			[void] $albums.AddRange($inputObject)
@@ -497,22 +537,24 @@ function Get-Artist {
 		[Parameter(Position = 0, HelpMessage = "Name of the artist")]
 		[string[]] $Name
 	)
+
 	if(!$name) {
 		$name = [string[]] @("*")
 	}
 
-	foreach($n in $name) {
-		foreach($x in $script:MPD.artists.GetEnumerator()) {
-			if($x.key -like $n) {
-				$albums = $x.value | group-object -property Album | foreach-object {
-					[Album] @{
-						Name = $_.Name
-						Tracks = ($_.group | sort-object -stable -property TrackNo)
-						Artist = $x.Key
-					}
+	$script:MPD.artists.values `
+	| script:select-track -artist:$name `
+	| group-object -property artist `
+	| foreach-object {
+		$artist = $_.name
+		[Artist] @{
+			name = $artist
+			albums = $_.group | group-object -property album | foreach-object {
+				[Album] @{
+					name = $_.name
+					artist = $artist
+					tracks = $_.group | sort-object -stable -property trackNo
 				}
-
-				[Artist] @{ Name = $x.key; Albums = $albums }
 			}
 		}
 	}
@@ -538,11 +580,13 @@ function Play-Artist {
 			$artists = script:Get-Artist -name:$name
 		}
 	}
+
 	process {
 		if($inputObject) {
 			[void] $artists.AddRange($inputObject)
 		}
 	}
+
 	end {
 		$nAlbs = $artists.albums.count
 		$ntracks = $artists.albums.tracks.count
@@ -1116,6 +1160,7 @@ function Select-Track {
 		[uint] $n = 0
 		$takeFirst = $psBoundParameters.ContainsKey("First")
 	}
+
 	process {
 		foreach($t in $inputObject) {
 			if($takeFirst -and $n -ge $first) {
@@ -1124,8 +1169,9 @@ function Select-Track {
 			if($artist) {
 				if(!$t.artist) { continue }
 				$found = $false
+
 				foreach($a in $artist) {
-					if($t.artist -like $a -or $t.artist -eq $a) {
+					if($t.normArtist, $t.artist -like $a -or $t.normArtist, $t.artist -eq $a) {
 						$found = $true
 						break
 					}
@@ -1137,7 +1183,7 @@ function Select-Track {
 				if(!$t.album) { continue }
 				$found = $false
 				foreach($a in $album) {
-					if($t.album -like $a -or $t.album -eq $a) {
+					if($t.normAlbum, $t.album -like $a -or $t.normAlbum, $t.album -eq $a) {
 						$found = $true
 						break
 					}
@@ -1149,7 +1195,7 @@ function Select-Track {
 				if(!$t.title) { continue }
 				$found = $false
 				foreach($s in $title) {
-					if($t.title -like $s -or $t.title -eq $s) {
+					if($t.normtitle, $t.title -like $s -or $t.normtitle, $t.title -eq $s) {
 						$found = $true
 						break
 					}

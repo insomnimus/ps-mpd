@@ -80,9 +80,16 @@ Register-ArgumentCompleter -CommandName Get-Artist, Play-Artist -ParameterName N
 	param($_a, $_b, $buf, $_d, $_params)
 
 	$buf = script::normalize-arg $buf
-	$script:MPD.artists.Keys `
-	| where-object { $_ -and $_ -like $buf } `
-	| script::quote
+	if(!$buf) {
+		$script:MPD.artists.keys | where-object { $_ } | script::quote
+		return
+	}
+
+	foreach($tracks in $script:MPD.artists.values) {
+		if($tracks.count -gt 0 -and $tracks[0].artist -and $tracks[0].matches($null, $buf, "")) {
+			$tracks[0].artist | script::quote
+		}
+	}
 }
 
 $completePlaylist = {
