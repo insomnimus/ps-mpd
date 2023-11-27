@@ -1,9 +1,35 @@
-filter :quote {
-	if($_ -match "[\s`'`"``\(\)\{\}]") {
-		$s = $_.replace("'", "''")
-		"'$s'"
-	} else {
-		$_
+function :quote {
+	[CmdletBinding()]
+	[OutputType([string])]
+	param (
+		[Parameter(Position = 0, ValueFromPipeline)]
+		[AllowEmptyString()]
+		[string] $str
+	)
+
+	begin {
+		$specials = [Collections.Generic.HashSet[char]] "{}()<>;,`$`"'@ `t`n|&".ToCharArray()
+		function :should-escape([string] $s) {
+			foreach($c in $s.GetEnumerator()) {
+				if($specials.Contains($c)) {
+					return $true
+				}
+			}
+			$false
+		}
+	}
+
+	process {
+		if(!$str) {
+			return
+		}
+
+		if(:should-escape $str) {
+			$str = $str.replace("'", "''")
+			"'$str'"
+		} else {
+			$str
+		}
 	}
 }
 
