@@ -22,7 +22,7 @@
         },
         {
           "name": "archive module",
-          "run": "cd bin/MPD && 7z a ../MPD.7z . && cd -"
+          "run": "cd bin/MPD && 7z a ../../MPD.7z . && cd -"
         },
         {
           "name": "upload artifacts",
@@ -48,14 +48,17 @@
         },
         {
           "name": "download artifacts",
-          "uses": "actions/download-artifact@v4"
+          "uses": "actions/download-artifact@v4",
+          "with": {
+              "path": "./artifacts"
+          }
         },
         {
           "name": "create github release",
           "env": {
             "GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
           },
-          "run": "gh release create ${{ github.ref_name }} $(find . -name MPD.7z) --generate-notes --title ${{ github.ref_name }}"
+          "run": "gh release create ${{ github.ref_name }} ./artifacts/*/* --generate-notes --title ${{ github.ref_name }}"
         }
       ]
     }
