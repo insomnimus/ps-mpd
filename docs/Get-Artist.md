@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,32 +8,24 @@ schema: 2.0.0
 # Get-Artist
 
 ## SYNOPSIS
-Gets an artist.
+Gets artists from the synced MPD library.
 
 ## SYNTAX
 
 ```
-Get-Artist [[-Name] <String[]>] [<CommonParameters>]
+Get-Artist [[-Name] <String[]>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets an artist.
+Gets artists from the synced MPD library.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Get-Artist
+Get-Artist Metallica
 ```
 
-Gets all the artists.
-
-### Example 2
-```powershell
-Get-Artist Insomnium
-```
-
-Gets the artist "Insomnium".
 
 ## PARAMETERS
 
@@ -48,6 +40,21 @@ Aliases:
 Required: False
 Position: 0
 Default value: None
+Accept pipeline input: True (ByValue)
+Accept wildcard characters: True
+```
+
+### -ProgressAction
+N/A
+
+```yaml
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
+
+Required: False
+Position: Named
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -57,11 +64,11 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
-### None
+### System.String[]
 
 ## OUTPUTS
 
-### Artist
+### MPD.Artist
 
 ## NOTES
 

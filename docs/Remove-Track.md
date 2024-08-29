@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,40 +8,40 @@ schema: 2.0.0
 # Remove-Track
 
 ## SYNOPSIS
-Removes tracks from a playlist.
+Removes tracks from playlists in your local, synced MPD playlists.
 
 ## SYNTAX
 
-### object (Default)
+### query (Default)
 ```
-Remove-Track [-Playlist] <Object[]> [-InputObject] <Track[]> [-NoSave] [-Force] [<CommonParameters>]
+Remove-Track [-Playlist] <String[]> [-Title <String[]>] [-Artist <String[]>] [-Album <String[]>] [-Force]
+[-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
-### query
+### pipe
 ```
-Remove-Track [-Playlist] <Object[]> [[-title] <String[]>] [-Artist <String>] [-Album <String>] [-NoSave]
- [-Force] [<CommonParameters>]
+Remove-Track [-Playlist] <String[]> -Track <Track[]> [-Force] [-ProgressAction <ActionPreference>]
+[<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Removes tracks from a playlist.
+Removes tracks from playlists in your local, synced MPD playlists.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Get-MPDStatus | Remove-track chill
+Get-Track -Playing | Remove-Track -Playlist chill
 ```
 
-Removes the currently playing track from the playlist "chill".
 
 ## PARAMETERS
 
 ### -Album
-Name of the album
+The album name to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: query
 Aliases:
 
@@ -49,14 +49,14 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -Artist
-The name of the artist
+The artist name to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: query
 Aliases:
 
@@ -64,41 +64,11 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -Force
-Force overwriting any externally made changes since last sync
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -InputObject
-The input Track object
-
-```yaml
-Type: Track[]
-Parameter Sets: object
-Aliases: Track
-
-Required: True
-Position: 1
-Default value: None
-Accept pipeline input: True (ByPropertyName, ByValue)
-Accept wildcard characters: False
-```
-
-### -NoSave
-Do not save the playlist to disk
+Do not fail if the playlist file was modified outside the MPD module since the time it was loaded
 
 ```yaml
 Type: SwitchParameter
@@ -113,10 +83,10 @@ Accept wildcard characters: False
 ```
 
 ### -Playlist
-The playlist object or name of the playlist
+The name of the playlist to remove from
 
 ```yaml
-Type: Object[]
+Type: String[]
 Parameter Sets: (All)
 Aliases:
 
@@ -124,11 +94,11 @@ Required: True
 Position: 0
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
-### -title
-Name of the track to remove
+### -Title
+The track title to match
 
 ```yaml
 Type: String[]
@@ -136,7 +106,37 @@ Parameter Sets: query
 Aliases:
 
 Required: False
-Position: 1
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: True
+```
+
+### -Track
+The Track object to remove
+
+```yaml
+Type: Track[]
+Parameter Sets: pipe
+Aliases:
+
+Required: True
+Position: Named
+Default value: None
+Accept pipeline input: True (ByPropertyName, ByValue)
+Accept wildcard characters: False
+```
+
+### -ProgressAction
+N/A
+
+```yaml
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
+
+Required: False
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -147,7 +147,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
-### Track[]
+### MPD.Track[]
 
 ## OUTPUTS
 

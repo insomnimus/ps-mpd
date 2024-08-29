@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,41 +8,40 @@ schema: 2.0.0
 # Save-Track
 
 ## SYNOPSIS
-Saves one or more tracks to a playlist.
+Adds songs to a local, synced MPD playlist.
 
 ## SYNTAX
 
-### object (Default)
+### query (Default)
 ```
-Save-Track [-Playlist] <Object[]> [-InputObject] <Track[]> [-NoSave] [-AllowDuplicates] [-Force]
- [<CommonParameters>]
+Save-Track [-Playlist] <String[]> [-Title <String[]>] [-Artist <String[]>] [-Album <String[]>]
+[-AllowDuplicates] [-Force] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
-### query
+### pipe
 ```
-Save-Track [-Playlist] <Object[]> [[-title] <String[]>] [-Artist <String>] [-Album <String>] [-NoSave]
- [-AllowDuplicates] [-Force] [<CommonParameters>]
+Save-Track [-Playlist] <String[]> -InputObject <Track[]> [-AllowDuplicates] [-Force]
+[-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Saves one or more tracks to a playlist.
+Adds songs to a local, synced MPD playlist.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Get-Playlist metal, rock | Select-Object -ExpandProperty Tracks | Save-Track metal-and-rock
+Get-Track -Artist Metallica | Save-Track metal
 ```
 
-Combines the playlists "rock" and "metal" into the playlist "metal-and-rock".
 
 ## PARAMETERS
 
 ### -Album
-Name of the album
+The album name to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: query
 Aliases:
 
@@ -50,11 +49,11 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -AllowDuplicates
-Allow adding tracks even if they are alreawdy in the playlist
+Add the track even if it's already in the playlist
 
 ```yaml
 Type: SwitchParameter
@@ -69,10 +68,10 @@ Accept wildcard characters: False
 ```
 
 ### -Artist
-The name of the artist
+The artist name to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: query
 Aliases:
 
@@ -80,11 +79,11 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -Force
-Overwrite any externally made changes since last sync
+Do not fail if the playlist file was modified outside the MPD module since the time it was loaded
 
 ```yaml
 Type: SwitchParameter
@@ -99,40 +98,25 @@ Accept wildcard characters: False
 ```
 
 ### -InputObject
-The input Track object
+The Track object to add
 
 ```yaml
 Type: Track[]
-Parameter Sets: object
-Aliases: Track
+Parameter Sets: pipe
+Aliases:
 
 Required: True
-Position: 1
+Position: Named
 Default value: None
 Accept pipeline input: True (ByPropertyName, ByValue)
 Accept wildcard characters: False
 ```
 
-### -NoSave
-Do not save the playlist to disk
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases: NS
-
-Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
 ### -Playlist
-The playlist object or name of the playlist to save the track to
+The name of the playlist to add to
 
 ```yaml
-Type: Object[]
+Type: String[]
 Parameter Sets: (All)
 Aliases:
 
@@ -140,11 +124,11 @@ Required: True
 Position: 0
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
-### -title
-Name of the track to save
+### -Title
+The track title to match
 
 ```yaml
 Type: String[]
@@ -152,7 +136,22 @@ Parameter Sets: query
 Aliases:
 
 Required: False
-Position: 1
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: True
+```
+
+### -ProgressAction
+N/A
+
+```yaml
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
+
+Required: False
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -163,7 +162,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
-### Track[]
+### MPD.Track[]
 
 ## OUTPUTS
 

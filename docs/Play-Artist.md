@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,22 +8,17 @@ schema: 2.0.0
 # Play-Artist
 
 ## SYNOPSIS
-Plays all tracks by an artist.
+Plays songs from an artist from your synced MPD library.
 
 ## SYNTAX
 
-### query (Default)
 ```
-Play-Artist [-Name] <String[]> [-Queue] [<CommonParameters>]
-```
-
-### object
-```
-Play-Artist [-InputObject] <Artist[]> [-Queue] [<CommonParameters>]
+Play-Artist [-Name] <String[]> -InputObject <Artist[]> [-Queue] [-ProgressAction <ActionPreference>]
+[<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Plays all tracks by an artist.
+Plays songs from an artist from your synced MPD library.
 
 ## EXAMPLES
 
@@ -32,42 +27,41 @@ Plays all tracks by an artist.
 Play-Artist Metallica
 ```
 
-Plays all tracks by the artist "Metallica".
 
 ## PARAMETERS
 
 ### -InputObject
-The input Artist object
+The Album object to play
 
 ```yaml
 Type: Artist[]
-Parameter Sets: object
+Parameter Sets: (All)
 Aliases:
 
 Required: True
-Position: 0
+Position: Named
 Default value: None
 Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
 ### -Name
-Name of the artist
+The album title to match
 
 ```yaml
 Type: String[]
-Parameter Sets: query
+Parameter Sets: (All)
 Aliases:
 
 Required: True
 Position: 0
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -Queue
-Add the artists tracks at the end of the queue
+Queue the tracks instead
 
 ```yaml
 Type: SwitchParameter
@@ -81,12 +75,27 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
+### -ProgressAction
+N/A
+
+```yaml
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
 ### CommonParameters
 This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable. For more information, see [about_CommonParameters](http://go.microsoft.com/fwlink/?LinkID=113216).
 
 ## INPUTS
 
-### Artist[]
+### MPD.Artist[]
 
 ## OUTPUTS
 

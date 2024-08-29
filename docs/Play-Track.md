@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,39 +8,39 @@ schema: 2.0.0
 # Play-Track
 
 ## SYNOPSIS
-Plays a track.
+Plays songs from your synced MPD library.
 
 ## SYNTAX
 
-### object (Default)
+### query (Default)
 ```
-Play-Track [-Track] <Track[]> [-Queue] [<CommonParameters>]
+Play-Track [[-Title] <String[]>] [-Artist <String[]>] [-Album <String[]>] [-Queue]
+[-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
-### query
+### pipe
 ```
-Play-Track [[-Title] <String[]>] [-Artist <String>] [-Album <String>] [-Queue] [<CommonParameters>]
+Play-Track -InputObject <Track[]> [-Queue] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Plays a track.
+Plays songs from your synced MPD library.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Play-Track "Never Gonna Give You Up"
+Play-Track "Hallowed Be Thy Name"
 ```
 
-Plays the track titled "Never Gonna Give You Up".
 
 ## PARAMETERS
 
 ### -Album
-The name of the album
+The album name to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: query
 Aliases:
 
@@ -48,14 +48,14 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -Artist
-The name of the artist
+The artist name to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: query
 Aliases:
 
@@ -63,11 +63,26 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
+Accept wildcard characters: True
+```
+
+### -InputObject
+The Track object to play
+
+```yaml
+Type: Track[]
+Parameter Sets: pipe
+Aliases:
+
+Required: True
+Position: Named
+Default value: None
+Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
 ### -Queue
-Append instead of replacing
+Queue the tracks instead
 
 ```yaml
 Type: SwitchParameter
@@ -82,7 +97,7 @@ Accept wildcard characters: False
 ```
 
 ### -Title
-The title of the track
+The track title to match
 
 ```yaml
 Type: String[]
@@ -93,21 +108,21 @@ Required: False
 Position: 0
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
-### -Track
-Track to play
+### -ProgressAction
+N/A
 
 ```yaml
-Type: Track[]
-Parameter Sets: object
-Aliases:
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
 
-Required: True
-Position: 0
+Required: False
+Position: Named
 Default value: None
-Accept pipeline input: True (ByValue)
+Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
@@ -116,7 +131,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
-### Track[]
+### MPD.Track[]
 
 ## OUTPUTS
 

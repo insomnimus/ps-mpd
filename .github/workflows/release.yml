@@ -1,5 +1,5 @@
 {
-  "name": "release",
+  "name": "Release",
   "on": {
     "push": {
       "tags": [
@@ -8,27 +8,57 @@
     }
   },
   "jobs": {
+    "build": {
+      "name": "Build Release Binaries",
+      "runs-on": "windows-latest",
+      "steps": [
+        {
+          "name": "checkout",
+          "uses": "actions/checkout@v4"
+        },
+        {
+          "name": "build",
+          "run": "./build.ps1"
+        },
+        {
+          "name": "archive module",
+          "run": "cd bin/MPD && 7z a ../MPD.7z . && cd -"
+        },
+        {
+          "name": "upload artifacts",
+          "uses": "actions/upload-artifact@v4",
+          "with": {
+            "name": "MPD.7z",
+            "path": "MPD.7z"
+          }
+        }
+      ]
+    },
     "release": {
       "name": "Create GitHub Release",
+      "needs": "build",
       "runs-on": "ubuntu-latest",
       "steps": [
         {
-          "name": "Setup | Checkout",
-          "uses": "actions/checkout@v2.3.4",
+          "name": "checkout",
+          "uses": "actions/checkout@v4",
           "with": {
             "fetch-depth": 0
           }
         },
         {
-          "name": "Setup | Archive Module",
-          "run": "7z a ps-mpd.zip MPD"
+          "name": "download artifacts",
+          "uses": "actions/download-artifact@v4",
+          "with": {
+            "path": "./artifacts"
+          }
         },
         {
-          "name": "Release | Release",
+          "name": "create github release",
           "env": {
             "GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
           },
-          "run": "gh release create ${{ github.ref_name }} ps-mpd.zip --generate-notes --title ${{ github.ref_name }} "
+          "run": "gh release create ${{ github.ref_name }} ./artifacts/*/* --generate-notes --title ${{ github.ref_name }}"
         }
       ]
     }

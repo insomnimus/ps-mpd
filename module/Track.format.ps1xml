@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+	<ViewDefinitions>
+	<View>
+	<Name>MPD Track Table</Name>
+	<ViewSelectedBy>
+		<TypeName>MPD.Track</TypeName>
+	</ViewSelectedBy>
+	<TableControl>
+		<TableHeaders>
+		<TableColumnHeader>
+			<Width>40</Width>
+			<Label>Title</Label>
+		</TableColumnHeader>
+		<TableColumnHeader>
+			<Width>35</Width>
+			<Label>Album</Label>
+		</TableColumnHeader>
+		<TableColumnHeader>
+			<Width>30</Width>
+			<Label>Artist</Label>
+		</TableColumnHeader>
+		</TableHeaders>
+
+		<TableRowEntries>
+		<TableRowEntry>
+			<TableColumnItems>
+			<TableColumnItem>
+				<ScriptBlock>if($_.Title) { $_.Title} else { "?" }</ScriptBlock>
+			</TableColumnItem>
+			<TableColumnItem>
+				<ScriptBlock>if($_.Album) { $_.Album } else { "?" }</ScriptBlock>
+			</TableColumnItem>
+			<TableColumnItem>
+				<ScriptBlock>if($_.Artist) { $_.Artist } else { "?" }</ScriptBlock>
+			</TableColumnItem>
+			</TableColumnItems>
+		</TableRowEntry>
+		</TableRowEntries>
+	</TableControl>
+	</View>
+	</ViewDefinitions>
+</Configuration>

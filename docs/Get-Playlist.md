@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,34 +8,24 @@ schema: 2.0.0
 # Get-Playlist
 
 ## SYNOPSIS
-Gets a playlist.
+Gets MPD playlists you saved locally.
 
 ## SYNTAX
 
 ```
-Get-Playlist [[-Name] <String[]>] [<CommonParameters>]
+Get-Playlist [[-Name] <String[]>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets a playlist.
-
-For this command to work, the last call to `Sync-MPD` must have set the `-PlaylistsDir` parameter to a directory containing `.m3u` files.
+Gets MPD playlists you saved locally from the synced module instance.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Get-Playlist
+Get-Playlist chill
 ```
 
-Gets all the playlists.
-
-### Example 2
-```powershell
-Get-Playlist "*metal*"
-```
-
-Gets all the playlists that contain "metal" in their names.
 
 ## PARAMETERS
 
@@ -45,10 +35,25 @@ Name of the playlist
 ```yaml
 Type: String[]
 Parameter Sets: (All)
-Aliases: Playlist
+Aliases:
 
 Required: False
 Position: 0
+Default value: None
+Accept pipeline input: True (ByValue)
+Accept wildcard characters: True
+```
+
+### -ProgressAction
+N/A
+
+```yaml
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
+
+Required: False
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -59,11 +64,11 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
-### None
+### System.String[]
 
 ## OUTPUTS
 
-### Playlist
+### MPD.Playlist
 
 ## NOTES
 

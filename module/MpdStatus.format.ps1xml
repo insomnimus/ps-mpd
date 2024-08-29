@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+	<ViewDefinitions>
+		<View>
+			<Name>MPDStatus compact</Name>
+			<ViewSelectedBy>
+				<TypeName>MPD.MPDStatus</TypeName>
+			</ViewSelectedBy>
+			<ListControl>
+				<ListEntries>
+					<ListEntry>
+						<ListItems>
+							<ListItem>
+								<PropertyName>Track</PropertyName>
+							</ListItem>
+							<ListItem>
+							<ItemSelectionCondition><ScriptBlock> $null -ne $_.Track -and $null -ne $_.Elapsed </ScriptBlock></ItemSelectionCondition>
+							<Label>Progress</Label>
+							<ScriptBlock> "{0:g}/{1:g} [{2:0}%]" -f $_.Elapsed, $_.Track.Duration, ($_.Elapsed / $_.Track.Duration * 100.0) </ScriptBlock>
+							</ListItem>
+							<ListItem>
+							<Label> Volume </Label>
+								<ScriptBlock> if($_.Volume -ge 0) { $_.Volume } else { "N/A" } </ScriptBlock>
+							</ListItem>
+							<ListItem><Label> Random </Label><ScriptBlock>if($_.Random) { "On" } else { "Off" }</ScriptBlock></ListItem>
+							<ListItem><Label> Repeat</Label><ScriptBlock>if($_.Repeat) {"On" } else {"Off" } </ScriptBlock></ListItem>
+							<ListItem><Label> Consume </Label><ScriptBlock>$_.Consume</ScriptBlock></ListItem>
+							<ListItem><Label> Single</Label><ScriptBlock>$_.Single</ScriptBlock></ListItem>
+							<ListItem><Label> ReplayGain</Label><ScriptBlock>$_.ReplayGain</ScriptBlock></ListItem>
+							<ListItem><Label> CrossFade</Label><ScriptBlock>$_.CrossFade</ScriptBlock></ListItem>
+							<ListItem><Label> MixRampDB</Label><ScriptBlock>$_.MixRampDB</ScriptBlock></ListItem>
+							<ListItem><Label> State</Label><ScriptBlock>$_.State</ScriptBlock></ListItem>
+						</ListItems>
+					</ListEntry>
+				</ListEntries>
+			</ListControl>
+		</View>
+	</ViewDefinitions>
+</Configuration>

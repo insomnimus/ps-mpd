@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+	<NoLogo/>
+	<TargetFramework>net8.0</TargetFramework>
+		<LangVersion>12</LangVersion>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	<AssemblyName>MPD</AssemblyName>
+	<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+	<ItemGroup>
+	<PackageReference Include="PowerShellStandard.Library" Version="5.1.0-preview-06">
+	<PrivateAssets>All</PrivateAssets>
+	</PackageReference>
+	</ItemGroup>
+</Project>

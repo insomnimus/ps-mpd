@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,32 +8,23 @@ schema: 2.0.0
 # Get-Album
 
 ## SYNOPSIS
-Gets an album.
+Gets albums from the synced MPD library.
 
 ## SYNTAX
 
 ```
-Get-Album [[-Name] <String[]>] [-Artist <String>] [<CommonParameters>]
+Get-Album [[-Title] <String[]>] [-Artist <String[]>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets an album.
+Gets albums from the synced MPD library.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Get-Album
+Get-Album Clayman
 ```
-
-Gets all the albums.
-
-### Example 2
-```powershell
-Get-Album -artist Insomnium
-```
-
-Gets all the albums by the artist "Insomnium".
 
 ## PARAMETERS
 
@@ -41,7 +32,7 @@ Gets all the albums by the artist "Insomnium".
 Name of the artist
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: (All)
 Aliases:
 
@@ -49,11 +40,11 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
-### -Name
-Name of the album
+### -Title
+The title of the album
 
 ```yaml
 Type: String[]
@@ -62,6 +53,21 @@ Aliases:
 
 Required: False
 Position: 0
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: True
+```
+
+### -ProgressAction
+N/A
+
+```yaml
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
+
+Required: False
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -76,7 +82,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## OUTPUTS
 
-### Album
+### MPD.Album
 
 ## NOTES
 

@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,36 +8,30 @@ schema: 2.0.0
 # Save-Playing
 
 ## SYNOPSIS
-Saves the currently playing track to a playlist.
+Adds the currently playing song to a local, synced MPD playlist.
 
 ## SYNTAX
 
-### query (Default)
 ```
-Save-Playing [-Name] <String[]> [-AllowDuplicates] [-Force] [<CommonParameters>]
-```
-
-### object
-```
-Save-Playing [-InputObject] <Playlist[]> [-AllowDuplicates] [-Force] [<CommonParameters>]
+Save-Playing [-Playlist] <String[]> [-AllowDuplicates] [-Force] [-ProgressAction <ActionPreference>]
+[<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Saves the currently playing track to a playlist.
+Adds the currently playing song to a local, synced MPD playlist.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Save-Playing old-school
+Save-Playing chill
 ```
 
-Saves the currently playing track to the playlist "old-school".
 
 ## PARAMETERS
 
 ### -AllowDuplicates
-Allow adding duplicates
+Add the track even if it's already in the playlist
 
 ```yaml
 Type: SwitchParameter
@@ -52,7 +46,7 @@ Accept wildcard characters: False
 ```
 
 ### -Force
-Force overwriting any externally made changes since last sync
+Do not fail if the playlist file was modified outside the MPD module since the time it was loaded
 
 ```yaml
 Type: SwitchParameter
@@ -66,31 +60,31 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -InputObject
-The input Playlist object
+### -Playlist
+The playlist to add to
 
 ```yaml
-Type: Playlist[]
-Parameter Sets: object
+Type: String[]
+Parameter Sets: (All)
 Aliases:
 
 Required: True
 Position: 0
 Default value: None
-Accept pipeline input: True (ByValue)
-Accept wildcard characters: False
+Accept pipeline input: False
+Accept wildcard characters: True
 ```
 
-### -Name
-The name of the playlist to save to
+### -ProgressAction
+N/A
 
 ```yaml
-Type: String[]
-Parameter Sets: query
-Aliases:
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
 
-Required: True
-Position: 0
+Required: False
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -101,7 +95,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
-### Playlist[]
+### None
 
 ## OUTPUTS
 

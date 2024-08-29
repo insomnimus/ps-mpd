@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration>
+	<ViewDefinitions>
+	<View>
+	<Name>MPDOutput Table</Name>
+	<ViewSelectedBy>
+		<TypeName>MPD.MpdOutput</TypeName>
+	</ViewSelectedBy>
+	<TableControl>
+		<TableHeaders>
+		<TableColumnHeader>
+			<Width>20</Width>
+			<Label>Name</Label>
+		</TableColumnHeader>
+		<TableColumnHeader>
+			<Width>8</Width>
+			<Label>State</Label>
+		</TableColumnHeader>
+		<TableColumnHeader>
+			<Width>9</Width>
+			<Label>Plugin</Label>
+		</TableColumnHeader>
+		<TableColumnHeader>
+			<Width>3</Width>
+			<Label>ID</Label>
+		</TableColumnHeader>
+		</TableHeaders>
+		<TableRowEntries>
+		<TableRowEntry>
+			<TableColumnItems>
+			<TableColumnItem>
+				<PropertyName>Name</PropertyName>
+			</TableColumnItem>
+			<TableColumnItem>
+				<ScriptBlock> if($_.Enabled) { "Enabled" } else { "Disabled" } </ScriptBlock>
+			</TableColumnItem>
+			<TableColumnItem>
+				<PropertyName>Plugin</PropertyName>
+			</TableColumnItem>
+			<TableColumnItem>
+				<PropertyName>ID</PropertyName>
+			</TableColumnItem>
+			</TableColumnItems>
+		</TableRowEntry>
+		</TableRowEntries>
+	</TableControl>
+	</View>
+	</ViewDefinitions>
+</Configuration>

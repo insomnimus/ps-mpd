@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,29 +8,25 @@ schema: 2.0.0
 # Select-Track
 
 ## SYNOPSIS
-Filters tracks by title, artist and album.
+Filters Tracks coming from the pipeline based on the title, album and artist.
 
 ## SYNTAX
 
 ```
-Select-Track [[-Title] <String[]>] [-Artist <String[]>] [-Album <String[]>] [-First <UInt32>]
- [-InputObject <Track[]>] [<CommonParameters>]
+Select-Track [-InputObject <Track[]>] [[-Title] <String[]>] [-Artist <String[]>] [-Album <String[]>]
+[-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Filters tracks by title, artist and album.
-
-Every parameter specified will narrow down the filter.
-Specifying multiple values per-parameter will make the filter more general.
+Filters Tracks coming from the pipeline based on the title, album and artist.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Get-Track | Select-Track -Artist Watain
+Get-Track | Select-Track -Title "The *"
 ```
 
-Gets all the tracks and selects those by the artist "Watain".
 
 ## PARAMETERS
 
@@ -46,11 +42,11 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -Artist
-The Artist name to match
+The artist name to match
 
 ```yaml
 Type: String[]
@@ -61,31 +57,16 @@ Required: False
 Position: Named
 Default value: None
 Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -First
-Select first N tracks that match the criteria
-
-```yaml
-Type: UInt32
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: Named
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
+Accept wildcard characters: True
 ```
 
 ### -InputObject
-The input Track object
+The input object
 
 ```yaml
 Type: Track[]
 Parameter Sets: (All)
-Aliases: Track
+Aliases:
 
 Required: False
 Position: Named
@@ -106,6 +87,21 @@ Required: False
 Position: 0
 Default value: None
 Accept pipeline input: False
+Accept wildcard characters: True
+```
+
+### -ProgressAction
+N/A
+
+```yaml
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
@@ -114,11 +110,11 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
-### Track[]
+### MPD.Track[]
 
 ## OUTPUTS
 
-### Track
+### MPD.Track
 
 ## NOTES
 

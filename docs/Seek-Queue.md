@@ -1,5 +1,5 @@
 ---
-external help file: MPD-help.xml
+external help file: MPD.dll-Help.xml
 Module Name: MPD
 online version:
 schema: 2.0.0
@@ -8,70 +8,85 @@ schema: 2.0.0
 # Seek-Queue
 
 ## SYNOPSIS
-Seeks to a track in the current queue.
+Advances the playback to a song in the current MPD queue.
 
 ## SYNTAX
 
 ```
-Seek-Queue [[-Title] <String>] [-Artist <String>] [-Album <String>] [<CommonParameters>]
+Seek-Queue [[-Title] <String[]>] [-Artist <String[]>] [-Album <String[]>] [-ProgressAction <ActionPreference>]
+[<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Seeks to a track in the current queue.
+Advances the playback to a song in the current MPD queue.
 
 ## EXAMPLES
 
 ### Example 1
 ```powershell
-Seek-Queue -Artist Eminem
+Seek-queue "Oceans of Regret"
 ```
 
-Seeks to the first song by the artist "Eminem" in the currently playing queue.
 
 ## PARAMETERS
 
 ### -Album
-Name of the album
+The album name to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: (All)
 Aliases:
 
 Required: False
 Position: Named
 Default value: None
-Accept pipeline input: True (ByPropertyName)
-Accept wildcard characters: False
+Accept pipeline input: False
+Accept wildcard characters: True
 ```
 
 ### -Artist
-The name of the artist
+The artist name to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: (All)
 Aliases:
 
 Required: False
 Position: Named
 Default value: None
-Accept pipeline input: True (ByPropertyName)
-Accept wildcard characters: False
+Accept pipeline input: False
+Accept wildcard characters: True
 ```
 
 ### -Title
-The title of a song from the current queue to seek to
+The track title to match
 
 ```yaml
-Type: String
+Type: String[]
 Parameter Sets: (All)
 Aliases:
 
 Required: False
 Position: 0
 Default value: None
-Accept pipeline input: True (ByPropertyName)
+Accept pipeline input: False
+Accept wildcard characters: True
+```
+
+### -ProgressAction
+N/A
+
+```yaml
+Type: ActionPreference
+Parameter Sets: (All)
+Aliases: proga
+
+Required: False
+Position: Named
+Default value: None
+Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
@@ -80,7 +95,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
-### System.String
+### None
 
 ## OUTPUTS
 
