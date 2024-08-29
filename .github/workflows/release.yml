@@ -49,13 +49,16 @@
         {
           "name": "download artifacts",
           "uses": "actions/download-artifact@v4"
+          "with": {
+              "path": "./artifacts"
+          }
         },
         {
           "name": "create github release",
           "env": {
             "GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
           },
-          "run": "gh release create ${{ github.ref_name }} MPD.7z --generate-notes --title ${{ github.ref_name }}"
+          "run": "gh release create ${{ github.ref_name }} ./artifacts/* --generate-notes --title ${{ github.ref_name }}"
         }
       ]
     }
