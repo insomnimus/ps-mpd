@@ -48,17 +48,14 @@
         },
         {
           "name": "download artifacts",
-          "uses": "actions/download-artifact@v4",
-          "with": {
-              "path": "./MPD.7z"
-          }
+          "uses": "actions/download-artifact@v4"
         },
         {
           "name": "create github release",
           "env": {
             "GITHUB_TOKEN": "${{ secrets.GITHUB_TOKEN }}"
           },
-          "run": "gh release create ${{ github.ref_name }} MPD.7z --generate-notes --title ${{ github.ref_name }}"
+          "run": "gh release create ${{ github.ref_name }} $(find . -name MPD.7z) --generate-notes --title ${{ github.ref_name }}"
         }
       ]
     }
