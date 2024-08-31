@@ -227,6 +227,7 @@ public class CompleteSeekQueue: MpdCompletionCmdlet {
 	[AllowEmptyCollection()]
 	[AllowNull()]
 	public string Album { get; set; }
+
 	protected override void ProcessRecord() {
 		var (isTitle, isArtist, isAlbum) = (false, false, false);
 		if (this.PropertyName == "Title") {
@@ -239,11 +240,13 @@ public class CompleteSeekQueue: MpdCompletionCmdlet {
 			this.Album = "";
 			isAlbum = true;
 		}
+
 		var filter = new TrackFilter(
 			string.IsNullOrEmpty(this.Title) ? [] : [this.Title],
 			string.IsNullOrEmpty(this.Artist) ? [] : [this.Artist],
 			string.IsNullOrEmpty(this.Album) ? [] : [this.Album]
 		);
+
 		using var mpc = new MpcContext(Mpd.Options.Connect(this.Cancel), this.Cancel);
 		var tracks = mpc.CurrentQueue();
 		foreach (var t in tracks) {

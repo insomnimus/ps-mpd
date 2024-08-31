@@ -450,7 +450,7 @@ internal class MpcContext: IDisposable {
 	}
 
 	public IEnumerable<Track> CurrentQueueIter() => parseTracksAsync(this.mpc.RunIter(PLAYLISTINFO, this.cancel)).ToBlockingEnumerable();
-	public Track[] CurrentQueue() => this.CurrentQueue().ToArray();
+	public Track[] CurrentQueue() => this.CurrentQueueIter().ToArray();
 	public Track Current() => this.currentAsync().GetAwaiter().GetResult();
 	public IAsyncEnumerable<Track> ListAllAsync() => parseTracksAsync(this.mpc.RunIter(LISTALLINFO, this.cancel));
 	public IEnumerable<Track> ListAll() => parseTracksAsync(this.mpc.RunIter(LISTALLINFO, this.cancel)).ToBlockingEnumerable();
