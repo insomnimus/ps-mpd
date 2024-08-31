@@ -17,3 +17,4 @@ csharp_new_line_between_query_expression_clauses = false
 
 csharp_space_before_colon_in_inheritance_clause = false
 # dotnet_diagnostic.IDE0005.severity = warning
+dotnet_diagnostic.CA1859.severity = warning
