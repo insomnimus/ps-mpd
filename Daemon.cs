@@ -113,6 +113,7 @@ internal class Mpd {
 
 	public static Album[] FindAlbums(TrackFilter filter, CancellationToken cancel) {
 		var albums = new SortedDictionary<(string title, string artist), List<Track>>();
+
 		foreach (var t in GetTracks(cancel)) {
 			if (filter.IsMatch(t)) {
 				var key = (title: t.NormAlbum, artist: t.NormArtist);

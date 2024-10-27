@@ -15,10 +15,12 @@ public class PlayAlbum: MpdCmdlet {
 	private TrackFilter filter;
 	private List<Album> albums = new();
 	private bool isPipe = false;
+
 	protected override void BeginProcessing() {
 		this.isPipe = this.ParameterSetName == "object";
 		this.filter = new([], this.Artist, this.Title);
 	}
+
 	protected override void ProcessRecord() {
 		if (isPipe) {
 			this.albums.AddRange(this.InputObject);
@@ -26,6 +28,7 @@ public class PlayAlbum: MpdCmdlet {
 			this.albums.AddRange(Mpd.FindAlbums(this.filter, this.Cancel));
 		}
 	}
+
 	protected override void EndProcessing() {
 		if (this.albums.Count == 0) {
 			WriteWarning("No albums found");

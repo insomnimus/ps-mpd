@@ -1,6 +1,6 @@
 @{
 	RootModule = "MPD.psm1"
-	ModuleVersion = "2.0.1"
+	ModuleVersion = "2.0.2"
 	GUID = "b2e868c9-4a29-4aac-bab8-1edcee8bc142"
 	Author = "Taylan Gökkaya"
 	Copyright = "Copyright (c) 2024 Taylan Gökkaya <insomnimus@proton.me>"

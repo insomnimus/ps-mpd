@@ -104,7 +104,7 @@ public class Album {
 	internal Album(List<Track> tracks) {
 		tracks.Sort((a, b) => a.TrackNo.CompareTo(b.TrackNo));
 		// This is internal so we can assume `tracks` isn't empty.
-		this.Title = tracks[0].Title;
+		this.Title = tracks[0].Album;
 		this.Artist = tracks[0].Artist;
 		this.Tracks = tracks;
 	}
